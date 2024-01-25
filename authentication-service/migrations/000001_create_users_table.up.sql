@@ -6,6 +6,7 @@ created_at timestamp(0) with time zone NOT NULL DEFAULT NOW(),
 userName text NOT NULL,
 type USERTYPE NOT NULL,
 email citext UNIQUE NOT NULL,
+number varchar(12) UNIQUE NOT NULL,
 password_hash bytea NOT NULL,
 activated bool NOT NULL,
 version integer NOT NULL DEFAULT 1

@@ -3,14 +3,16 @@ package main
 import (
 	auth "authentication-service/auth_proto"
 	"authentication-service/internal/data"
+	"authentication-service/internal/sms"
 	"database/sql"
 	"fmt"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/joho/godotenv"
+	"github.com/redis/go-redis/v9"
 	"google.golang.org/grpc"
 	"log"
 	"net"
 	"net/http"
-	"time"
+	"os"
 
 	_ "github.com/jackc/pgconn"
 	_ "github.com/jackc/pgx/v4"
@@ -24,11 +26,16 @@ var counts int64
 type Config struct {
 	DB     *sql.DB
 	Models data.Models
+	Redis  *redis.Client
 }
 
 func main() {
 	log.Println("Starting authentication service")
+	err := godotenv.Load(".env")
 
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 	// connect to DB
 	conn := connectToDB()
 	if conn == nil {
@@ -39,8 +46,8 @@ func main() {
 	app := Config{
 		DB:     conn,
 		Models: data.New(conn),
+		Redis:  openRedisConn(),
 	}
-	http.Handle("/metrics", promhttp.Handler())
 
 	go func() {
 		log.Fatal(http.ListenAndServe(":8084", nil))
@@ -49,54 +56,21 @@ func main() {
 
 }
 
-func openDB(dsn string) (*sql.DB, error) {
-	db, err := sql.Open("pgx", dsn)
-	if err != nil {
-		return nil, err
-	}
-
-	err = db.Ping()
-	if err != nil {
-		return nil, err
-	}
-
-	return db, nil
-}
-
-func connectToDB() *sql.DB {
-	dsn := "postgres://postgres:2529@localhost/postgres"
-	//os.Getenv("DSN")
-
-	for {
-		connection, err := openDB(dsn)
-		if err != nil {
-			log.Println("Postgres not yet ready ...")
-			counts++
-		} else {
-			log.Println("Connected to Postgres!")
-			return connection
-		}
-
-		if counts > 10 {
-			log.Println(err)
-			return nil
-		}
-
-		log.Println("Backing off for two seconds....")
-		time.Sleep(2 * time.Second)
-		continue
-	}
-}
-
 func (app *Config) grpcListen() {
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", grpcPort))
 	if err != nil {
 		log.Fatalf("Failed to listen for gRPC: %v", err)
 	}
 	s := grpc.NewServer()
-	auth.RegisterTokenServiceServer(s, &AuthService{Models: app.Models})
-	auth.RegisterRegServiceServer(s, &AuthService{Models: app.Models})
-	auth.RegisterAuthServiceServer(s, &AuthService{Models: app.Models})
+	//get url from env file
+	url := os.Getenv("SMS_URL")
+	//get API key from env file
+	apiKey := os.Getenv("API_KEY")
+	authService := &AuthService{Models: app.Models, Sender: sms.NewMessageService(url, apiKey), Redis: app.Redis}
+	auth.RegisterTokenServiceServer(s, authService)
+	auth.RegisterRegServiceServer(s, authService)
+	auth.RegisterAuthServiceServer(s, authService)
+	auth.RegisterSmsServiceServer(s, authService)
 	log.Printf("gRPC Server started on port %s", grpcPort)
 	err = s.Serve(lis)
 	if err != nil {

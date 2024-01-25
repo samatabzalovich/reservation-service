@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v4.24.4
-// source: auth_proto/auth.proto
+// source: auth.proto
 
 package auth
 
@@ -101,7 +101,93 @@ var TokenService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "auth_proto/auth.proto",
+	Metadata: "auth.proto",
+}
+
+// SmsServiceClient is the client API for SmsService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type SmsServiceClient interface {
+	ActivateUser(ctx context.Context, in *SmsRequest, opts ...grpc.CallOption) (*TokenResponse, error)
+}
+
+type smsServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewSmsServiceClient(cc grpc.ClientConnInterface) SmsServiceClient {
+	return &smsServiceClient{cc}
+}
+
+func (c *smsServiceClient) ActivateUser(ctx context.Context, in *SmsRequest, opts ...grpc.CallOption) (*TokenResponse, error) {
+	out := new(TokenResponse)
+	err := c.cc.Invoke(ctx, "/auth.SmsService/ActivateUser", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// SmsServiceServer is the server API for SmsService service.
+// All implementations must embed UnimplementedSmsServiceServer
+// for forward compatibility
+type SmsServiceServer interface {
+	ActivateUser(context.Context, *SmsRequest) (*TokenResponse, error)
+	mustEmbedUnimplementedSmsServiceServer()
+}
+
+// UnimplementedSmsServiceServer must be embedded to have forward compatible implementations.
+type UnimplementedSmsServiceServer struct {
+}
+
+func (UnimplementedSmsServiceServer) ActivateUser(context.Context, *SmsRequest) (*TokenResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ActivateUser not implemented")
+}
+func (UnimplementedSmsServiceServer) mustEmbedUnimplementedSmsServiceServer() {}
+
+// UnsafeSmsServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to SmsServiceServer will
+// result in compilation errors.
+type UnsafeSmsServiceServer interface {
+	mustEmbedUnimplementedSmsServiceServer()
+}
+
+func RegisterSmsServiceServer(s grpc.ServiceRegistrar, srv SmsServiceServer) {
+	s.RegisterService(&SmsService_ServiceDesc, srv)
+}
+
+func _SmsService_ActivateUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SmsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SmsServiceServer).ActivateUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/auth.SmsService/ActivateUser",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SmsServiceServer).ActivateUser(ctx, req.(*SmsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// SmsService_ServiceDesc is the grpc.ServiceDesc for SmsService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var SmsService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "auth.SmsService",
+	HandlerType: (*SmsServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "ActivateUser",
+			Handler:    _SmsService_ActivateUser_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "auth.proto",
 }
 
 // RegServiceClient is the client API for RegService service.
@@ -187,7 +273,7 @@ var RegService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "auth_proto/auth.proto",
+	Metadata: "auth.proto",
 }
 
 // AuthServiceClient is the client API for AuthService service.
@@ -273,5 +359,5 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "auth_proto/auth.proto",
+	Metadata: "auth.proto",
 }

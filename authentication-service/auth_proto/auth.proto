@@ -5,7 +5,7 @@ package auth;
 option go_package = "/auth";
 
 message Auth {
-  string email = 1;
+  string phoneNumber = 1;
   string password = 2;
 }
 
@@ -21,12 +21,25 @@ service TokenService {
   rpc CreateAuthenticationToken(TokenRequest) returns (TokenResponse);
 }
 
+message Sms {
+  string phoneNumber = 1;
+  string code = 2;
+}
+
+message SmsRequest {
+  Sms SmsEntry  = 1;
+}
+service SmsService {
+  rpc ActivateUser(SmsRequest) returns (TokenResponse);
+}
+
 message Reg {
   string email = 1;
   string password = 2;
   string userName = 3;
   string type = 4;
   bool activated = 5;
+  string phoneNumber = 6;
 }
 
 message RegRequest {
@@ -52,6 +65,7 @@ message User {
   string type = 4;
   bool activated = 5;
   int64 id = 6;
+  string number = 7;
 }
 
 message AuthRequest {

@@ -29,9 +29,11 @@ func New(dbPool *sql.DB) Models {
 type Models struct {
 	Users interface {
 		Insert(user *User) error
-		GetByEmail(email string) (*User, error)
+		GetByNumber(number string) (*User, error)
+		GetByEmail(number string) (*User, error)
 		Update(user *User) error
 		GetForToken(tokenScope, tokenPlaintext string) (*User, error)
+		ActivateUser(number string) (int64, error)
 	}
 	Tokens interface {
 		DeleteAllForUser(scope string, userID int64) error

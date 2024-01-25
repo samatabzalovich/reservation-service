@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strings"
 )
 
 type jsonResponse struct {
@@ -54,9 +55,24 @@ func (app *Config) writeJSON(w http.ResponseWriter, status int, data any, header
 	return nil
 }
 
-// errorJSON takes an error, and optionally a response status code, and generates and sends
+// rpcErrorJson takes an error, and optionally a response status code, and generates and sends
 // a json error response
-func (app *Config) errorJSON(w http.ResponseWriter, err error, status ...int) error {
+func (app *Config) rpcErrorJson(w http.ResponseWriter, err error, status ...int) error {
+	statusCode := http.StatusBadRequest
+
+	if len(status) > 0 {
+		statusCode = status[0]
+	}
+	errorMsg := err.Error()
+	errorMsg = strings.Replace(errorMsg, "rpc error: code = Unknown desc = ", "", 1)
+
+	var payload jsonResponse
+	payload.Error = true
+	payload.Message = errorMsg
+
+	return app.writeJSON(w, statusCode, payload)
+}
+func (app *Config) errorJson(w http.ResponseWriter, err error, status ...int) error {
 	statusCode := http.StatusBadRequest
 
 	if len(status) > 0 {
