@@ -14,18 +14,6 @@ services:
       replicas: 1
 
 
-  driver-service:
-    build:
-      context: ./../driver-service
-      dockerfile: ./../driver-service/driver-service.dockerfile
-    restart: always
-    ports:
-      - "8082:80"
-    deploy:
-      mode: replicated
-      replicas: 1
-
-
   authentication-service:
     build:
       context: ./../authentication-service
@@ -37,7 +25,7 @@ services:
       mode: replicated
       replicas: 1
     environment:
-      DSN: "host=postgres port=5432 user=postgres password=password dbname=users sslmode=disable timezone=UTC connect_timeout=5"
+      DSN: "host=postgres port=190704Samat user=postgres password=password dbname=users sslmode=disable timezone=UTC connect_timeout=5"
 
 
   postgres:
@@ -50,7 +38,7 @@ services:
       replicas: 1
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: 190704Samat
       POSTGRES_DB: users
     volumes:
       - ./db-data/postgres/:/var/lib/postgresql/data/
