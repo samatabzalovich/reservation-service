@@ -66,14 +66,25 @@ AUTH_PROTO_DIR := ../authentication-service/auth_proto
 AUTH_PROTO_FILE := $(AUTH_PROTO_DIR)/auth.proto
 AUTH_OUT_DIR := $(AUTH_PROTO_DIR)
 
-BROKER_PROTO_DIR := ../broker-service/auth
-BROKER_PROTO_FILE := $(BROKER_PROTO_DIR)/auth.proto
-BROKER_OUT_DIR := $(BROKER_PROTO_DIR)
+BROKER_AUTH_PROTO_DIR := ../broker-service/proto_files/auth
+BROKER_AUTH_PROTO_FILE := $(BROKER_AUTH_PROTO_DIR)/auth.proto
+BROKER_AUTH_OUT_DIR := $(BROKER_AUTH_PROTO_DIR)
+
+BROKER_INST_PROTO_DIR := ../broker-service/proto_files/institution_proto
+BROKER_INST_PROTO_FILE := $(BROKER_INST_PROTO_DIR)/inst.proto
+BROKER_INST_OUT_DIR := $(BROKER_INST_PROTO_DIR)
+
+INSTITUTION_PROTO_DIR := ../institution-service/proto_files/institution_proto
+INSTITUTION_PROTO_FILE := $(INSTITUTION_PROTO_DIR)/inst.proto
+INSTITUTION_OUT_DIR := $(INSTITUTION_PROTO_DIR)
+
 
 ## build_proto: builds the proto files
 
 build_proto:
 	@echo "Building proto files..."
 	protoc --go_out=${AUTH_OUT_DIR} --go_opt=paths=source_relative --go-grpc_out=${AUTH_OUT_DIR} --go-grpc_opt=paths=source_relative --proto_path=${AUTH_PROTO_DIR} ${AUTH_PROTO_FILE}
-	protoc --go_out=${BROKER_OUT_DIR} --go_opt=paths=source_relative --go-grpc_out=${BROKER_OUT_DIR} --go-grpc_opt=paths=source_relative --proto_path=${BROKER_PROTO_DIR} ${BROKER_PROTO_FILE}
+	protoc --go_out=${BROKER_AUTH_OUT_DIR} --go_opt=paths=source_relative --go-grpc_out=${BROKER_AUTH_OUT_DIR} --go-grpc_opt=paths=source_relative --proto_path=${BROKER_AUTH_PROTO_DIR} ${BROKER_AUTH_PROTO_FILE}
+	protoc --go_out=${INSTITUTION_OUT_DIR} --go_opt=paths=source_relative --go-grpc_out=${INSTITUTION_OUT_DIR} --go-grpc_opt=paths=source_relative --proto_path=${INSTITUTION_PROTO_DIR} ${INSTITUTION_PROTO_FILE}
+	protoc --go_out=${BROKER_INST_OUT_DIR} --go_opt=paths=source_relative --go-grpc_out=${BROKER_INST_OUT_DIR} --go-grpc_opt=paths=source_relative --proto_path=${BROKER_INST_PROTO_DIR} ${BROKER_INST_PROTO_FILE}
 	@echo "Done!"

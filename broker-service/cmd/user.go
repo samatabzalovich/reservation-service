@@ -1,7 +1,7 @@
 package main
 
 import (
-	"broker-service/auth"
+	"broker-service/proto_files/auth"
 	"context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"

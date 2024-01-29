@@ -11,7 +11,6 @@ import (
 	"google.golang.org/grpc"
 	"log"
 	"net"
-	"net/http"
 	"os"
 
 	_ "github.com/jackc/pgconn"
@@ -49,9 +48,6 @@ func main() {
 		Redis:  openRedisConn(),
 	}
 
-	go func() {
-		log.Fatal(http.ListenAndServe(":8084", nil))
-	}()
 	app.grpcListen()
 
 }
