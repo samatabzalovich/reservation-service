@@ -25,13 +25,25 @@ services:
       mode: replicated
       replicas: 1
     environment:
-      DSN: "host=postgres port=190704Samat user=postgres password=password dbname=users sslmode=disable timezone=UTC connect_timeout=5"
+      DSN: "host=postgres port=5432 user=postgres password=190704Samat dbname=reserveHub sslmode=disable timezone=UTC connect_timeout=5"
 
+  institution-service:
+    build:
+      context: ./../institution-service
+      dockerfile: ./../institution-service/inst-service.dockerfile
+    restart: always
+    ports:
+      - "8082:80"
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      DSN: "host=postgres port=5432 user=postgres password=190704Samat dbname=reserveHub sslmode=disable timezone=UTC connect_timeout=5"
 
   postgres:
-    image: 'postgres:14.0'
+    image: 'postgres:alpine3.18'
     ports:
-      - "5433:5432"
+      - "5432:5432"
     restart: always
     deploy:
       mode: replicated
@@ -39,6 +51,17 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: 190704Samat
-      POSTGRES_DB: users
+      POSTGRES_DB: reserveHub
     volumes:
       - ./db-data/postgres/:/var/lib/postgresql/data/
+
+  redis:
+    image: 'redis:7.0-alpine'
+    ports:
+      - "6379:6379"
+    restart: always
+    deploy:
+      mode: replicated
+      replicas: 1
+    volumes:
+      - ./db-data/redis/:/data/

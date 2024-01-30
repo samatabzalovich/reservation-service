@@ -1,10 +1,7 @@
 
 BROKER_BINARY=brokerApp
 AUTH_BINARY=authApp
-LOGGER_BINARY=loggerServiceApp
-PRODUCT_BINARY=productServiceApp
-MAIL_BINARY=mailerApp
-LISTENER_BINARY=listenerApp
+INSTITUTION_BINARY=instApp
 
 
 ## up: starts all containers in the background without forcing build
@@ -14,7 +11,7 @@ up:
 	@echo "Docker images started!"
 #build_logger build_mail build_listener build_product
 ## up_build: stops docker-compose (if running), builds all projects and starts docker compose
-up_build: build_broker build_auth
+up_build: build_broker build_auth build_inst
 	@echo "Stopping docker images (if running...)"
 	docker-compose down
 	@echo "Building (when required) and starting docker images..."
@@ -33,33 +30,16 @@ build_broker:
 	cd ../broker-service && env GOOS=linux CGO_ENABLED=0 go build -o ${BROKER_BINARY} ./cmd/api
 	@echo "Done!"
 
-## build_logger: builds the logger binary as a linux executable
-build_logger:
-	@echo "Building logger binary..."
-	cd ../logger-service && env GOOS=linux CGO_ENABLED=0 go build -o ${LOGGER_BINARY} ./cmd/api
-	@echo "Done!"
-
-build_product:
-	@echo "Building product binary..."
-	cd ../product-service && env GOOS=linux CGO_ENABLED=0 go build -o ${PRODUCT_BINARY} ./cmd/api
-	@echo "Done!"
-
-## build_listener: builds the listener binary as a linux executable
-build_listener:
-	@echo "Building listener binary..."
-	cd ../listener-service && env GOOS=linux CGO_ENABLED=0 go build -o ${LISTENER_BINARY} .
-	@echo "Done!"
-
 ## build_auth: builds the auth binary as a linux executable
 build_auth:
 	@echo "Building auth binary..."
 	cd ../authentication-service && env GOOS=linux CGO_ENABLED=0 go build -o ${AUTH_BINARY} ./cmd/api
 	@echo "Done!"
 
-## build_mail: builds the mail binary as a linux executable
-build_mail:
-	@echo "Building mail binary..."
-	cd ../mail-service && env GOOS=linux CGO_ENABLED=0 go build -o ${MAIL_BINARY} ./cmd/api
+## build_inst : builds the institution binary as a linux executable
+build_inst:
+	@echo "Building institution binary..."
+	cd ../institution-service && env GOOS=linux CGO_ENABLED=0 go build -o ${INSTITUTION_BINARY} ./cmd/api
 	@echo "Done!"
 
 AUTH_PROTO_DIR := ../authentication-service/auth_proto
@@ -91,18 +71,24 @@ build_proto:
 
 
 ## Migration paths
-DSN := postgres://postgres:190704Samat@localhost/postgres?sslmode=disable
-INSTITUTION_DIR_MIGR := ../institution-service/migrations
-AUTH_DIR_MIGR := ../authentication-service/migrations
+DSN := postgres://postgres:190704Samat@localhost/reserveHub?sslmode=disable
+DIR_MIGRATIONS := ../migrations
+NAME := insert_temp_categories
 
-migrate_up: 
+migrate_up:
 	@echo "Migrating up..."
-	migrate -path ${INSTITUTION_DIR_MIGR} -database "${DSN}" up
-	migrate -path ${AUTH_DIR_MIGR} -database "${DSN}" up
+	migrate -path ${DIR_MIGRATIONS} -database "${DSN}" up
 	@echo "Done!"
+
+
 
 migrate_down:
 	@echo "Migrating down..."
-	migrate -path ${INSTITUTION_DIR_MIGR} -database "${DSN}" down
-	migrate -path ${AUTH_DIR_MIGR} -database "${DSN}" down
+	migrate -path ${DIR_MIGRATIONS} -database "${DSN}" down
 	@echo "Done!"
+
+migrate_create:
+	@echo "Creating migration..."
+	migrate create -ext sql -dir ${DIR_MIGRATIONS} -seq ${NAME}
+	@echo "Done!"
+

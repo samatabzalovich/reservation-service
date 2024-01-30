@@ -7,36 +7,28 @@ import (
 	"log"
 	"net"
 
-	"github.com/joho/godotenv"
-	"google.golang.org/grpc"
 	_ "github.com/jackc/pgconn"
 	_ "github.com/jackc/pgx/v4"
 	_ "github.com/jackc/pgx/v4/stdlib"
+	"google.golang.org/grpc"
 )
 
-const grpcPort = "50002" // TODO: change to 50001 when production
+const grpcPort = "50001" // TODO: change to 50001 when production
 
 var counts int64
 
 type Config struct {
-	Models      data.Models
+	Models data.Models
 }
 
 func main() {
-
 	log.Println("Starting institution service")
-	err := godotenv.Load(".env")
-
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
 	dbConn := connectToDB()
 	if dbConn == nil {
 		log.Panic("Can't connect to Postgres!")
 	}
-
 	app := &Config{
-		Models:      data.New(dbConn),
+		Models: data.New(dbConn),
 	}
 	app.grpcListen()
 }
