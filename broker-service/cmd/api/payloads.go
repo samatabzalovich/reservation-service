@@ -1,17 +1,13 @@
 package main
 
-
 type RequestPayload struct {
-	Action string       `json:"action"`
-	Auth   AuthPayload  `json:"auth,omitempty"`
-	Reg    RegPayload   `json:"reg,omitempty"`
-	Token  TokenPayload `json:"token,omitempty"`
-	Sms    SmsPayload   `json:"sms,omitempty"`
-	Institution InstPayload `json:"institution,omitempty"`
+	Action      string       `json:"action"`
+	Auth        AuthPayload  `json:"auth,omitempty"`
+	Reg         RegPayload   `json:"reg,omitempty"`
+	Token       TokenPayload `json:"token,omitempty"`
+	Sms         SmsPayload   `json:"sms,omitempty"`
+	Institution InstPayload  `json:"institution,omitempty"`
 }
-
-
-
 
 type TokenPayload struct {
 	Bearer string `json:"bearer"`
@@ -35,7 +31,7 @@ type RegPayload struct {
 }
 
 type InstPayload struct {
-	Id 		int64  `json:"id"`
+	Id          int64  `json:"id,omitempty"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	Website     string `json:"website"`
@@ -50,9 +46,9 @@ type InstPayload struct {
 }
 
 type FilterPayload struct {
-	PageSize int
-	Page int
+	PageSize   int
+	Page       int
 	SearchText string
-	Sort string
+	Sort       string
 	CategoryId int64
 }

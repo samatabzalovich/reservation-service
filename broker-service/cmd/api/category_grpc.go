@@ -1,8 +1,8 @@
 package main
 
 import (
+	inst "broker-service/proto_files/institution_proto"
 	"context"
-	inst "institution-service/proto_files/institution_proto"
 	"net/http"
 	"time"
 

@@ -1,2 +1,2 @@
-/institution-service/cmd/api/.env
-/authentication-service/cmd/api/.env
+/institution-service/.env
+/authentication-service/.env

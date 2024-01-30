@@ -100,7 +100,12 @@ func (instService *InstitutionService) UpdateInstitution(ctx context.Context, re
 		City:        req.GetCity(),
 		CategoryId:  req.GetCategoryId(),
 	}
-	err := instService.Models.Institutions.Update(institution)
+	version, err := instService.Models.Institutions.GetVersionByIdForOwner(institution.OwnerId, institution.ID)
+	if err != nil {
+		return nil, err
+	}
+	institution.Version = version
+	err = instService.Models.Institutions.Update(institution)
 	if err != nil {
 		return nil, err
 	}
@@ -115,14 +120,14 @@ func (instService *InstitutionService) DeleteInstitution(ctx context.Context, re
 	return &inst.DeleteInstitutionResponse{Id: req.GetId()}, nil
 }
 
-func (instService *InstitutionService) SearchInstitution(ctx context.Context, req *inst.SearchInstitutionsRequest) (*inst.InstitutionsResponse, error) {
+func (instService *InstitutionService) SearchInstitutions(ctx context.Context, req *inst.SearchInstitutionsRequest) (*inst.InstitutionsResponse, error) {
 	sortSafeList := []string{"id", "rating", "appointments", "employees", "-id", "-rating", "-appointments", "-employees"}
 	filter, err := data.NewFilters(int(req.GetPageNumber()), int(req.GetPageSize()), req.GetSort(), sortSafeList)
 	if err != nil {
 		return nil, err
 	}
 
-	institutions, metadata,err := instService.Models.Institutions.Search(req.CategoryId, req.SearchText, filter)
+	institutions, metadata, err := instService.Models.Institutions.Search(req.CategoryId, req.SearchText, filter)
 	if err != nil {
 		return nil, err
 	}

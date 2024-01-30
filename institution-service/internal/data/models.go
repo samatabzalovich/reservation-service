@@ -5,7 +5,7 @@ import (
 	"errors"
 )
 
-var (	
+var (
 	// ErrInvalidName is used when the name is not valid
 	ErrInvalidName = errors.New("invalid name")
 	// ErrInvalidDescription is used when the description is not valid
@@ -35,7 +35,7 @@ var (
 	//ErrInvalidAddress is used when the address is not valid
 	ErrInvalidAddress = errors.New("invalid address")
 	//ErrEditConflict is used when the update conflicts with another update
-	ErrEditConflict   = errors.New("edit conflict")
+	ErrEditConflict = errors.New("edit conflict")
 )
 
 var db *sql.DB
@@ -44,11 +44,10 @@ func New(dbPool *sql.DB) Models {
 	db = dbPool
 
 	return Models{
-		Categories: CategoryModel{DB: db},
+		Categories:   CategoryModel{DB: db},
 		Institutions: InstitutionModel{DB: db},
 	}
 }
-
 
 type Models struct {
 	Categories interface {
@@ -59,11 +58,12 @@ type Models struct {
 		Delete(id int64) error
 	}
 	Institutions interface {
-		Insert(institution *Institution) (int64,error)
+		Insert(institution *Institution) (int64, error)
+		GetVersionByIdForOwner(ownerId, id int64) (int, error)
 		GetById(id int64) (*Institution, error)
-		GetAll(categoryId int64, filters Filters) ([]*Institution, Metadata,error)
-		Update(institution *Institution) (error)
+		GetAll(categoryId int64, filters Filters) ([]*Institution, Metadata, error)
+		Update(institution *Institution) error
 		Delete(id int64) error
-		Search(categoryId int64, searchText string,filters Filters) ([]*Institution, Metadata,error)
+		Search(categoryId int64, searchText string, filters Filters) ([]*Institution, Metadata, error)
 	}
 }

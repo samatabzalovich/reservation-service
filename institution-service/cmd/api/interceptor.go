@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"log"
 	"strings"
 
 	"google.golang.org/grpc"
@@ -11,7 +10,6 @@ import (
 )
 
 func (app *Config) authUnaryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-	log.Printf("gRPC method: %s", info.FullMethod)
 	protectedMethods := []string{
 		"/inst.InstitutionService/CreateInstitution",
 		"/inst.InstitutionService/UpdateInstitution",
