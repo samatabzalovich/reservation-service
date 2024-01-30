@@ -23,7 +23,10 @@ func (app *Config) routes() http.Handler {
 	mux.Use(middleware.Heartbeat("/ping"))
 	mux.Post("/", app.Broker)
 
-	mux.Post("/handle", app.HandleSubmission)
+	mux.Post("/handleAuth", app.HandleAuthSubmission)
+	mux.Post("/handleInstitution", app.HandleInstitutionSubmission)
+	mux.Get("/hanleListInstitutions", app.ListInstitutions)
+	mux.Get("/hanleGetCategories", app.GetCategories)
 
 	return mux
 }

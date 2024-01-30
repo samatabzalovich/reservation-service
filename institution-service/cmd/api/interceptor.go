@@ -19,7 +19,7 @@ func (app *Config) authUnaryInterceptor(ctx context.Context, req interface{}, in
 		"/inst.CategoryService/CreateCategory",
 	}
 
-	if needsAuthentication(info.FullMethod, protectedMethods) {
+	if isInProtectedMethods(info.FullMethod, protectedMethods) {
 		md, ok := metadata.FromIncomingContext(ctx)
 		if !ok {
 			return nil, errors.New("metadata is not provided")
@@ -35,6 +35,9 @@ func (app *Config) authUnaryInterceptor(ctx context.Context, req interface{}, in
 		if err != nil || payload == nil {
 			return nil, errors.New("invalid token")
 		}
+		if !payload.Activated {
+			return nil, errors.New("user is not activated")
+		}
 		// Add the user data to the context
 		ctx = *app.contextSetUser(ctx, payload)
 	}
@@ -43,7 +46,7 @@ func (app *Config) authUnaryInterceptor(ctx context.Context, req interface{}, in
 	return handler(ctx, req)
 }
 
-func needsAuthentication(method string, protectedMethods []string) bool {
+func isInProtectedMethods(method string, protectedMethods []string) bool {
 	for _, protectedMethod := range protectedMethods {
 		if strings.EqualFold(method, protectedMethod) {
 			return true

@@ -20,7 +20,7 @@ func NewFilters(page int, pageSize int, sort string, sortSafelist []string) (Fil
 	if sort == "" {
 		return Filters{}, ErrInvalidSort
 	}
-	if PermittedValue(sort, sortSafelist...) == false {
+	if !PermittedValue(sort, sortSafelist...) {
 		return Filters{}, ErrInvalidSort
 	}
 	return Filters{

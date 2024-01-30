@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v4.25.2
-// source: auth.proto
+// source: auth.proto_files
 
 package auth
 
@@ -101,7 +101,7 @@ var TokenService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "auth.proto",
+	Metadata: "auth.proto_files",
 }
 
 // SmsServiceClient is the client API for SmsService service.
@@ -187,7 +187,7 @@ var SmsService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "auth.proto",
+	Metadata: "auth.proto_files",
 }
 
 // RegServiceClient is the client API for RegService service.
@@ -273,7 +273,7 @@ var RegService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "auth.proto",
+	Metadata: "auth.proto_files",
 }
 
 // AuthServiceClient is the client API for AuthService service.
@@ -359,5 +359,5 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "auth.proto",
+	Metadata: "auth.proto_files",
 }

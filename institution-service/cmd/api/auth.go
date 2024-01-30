@@ -11,6 +11,7 @@ import (
 type AuthPayload struct {
 	UserId int64
 	Type string
+	Activated bool
 }
 
 func (app *Config) GetUserForToken(token string) (*AuthPayload, error) {
@@ -36,5 +37,6 @@ func (app *Config) GetUserForToken(token string) (*AuthPayload, error) {
 	return &AuthPayload{
 		UserId: res.User.GetId(),
 		Type: res.User.GetType(),
+		Activated: res.User.GetActivated(),
 	}, nil
 }

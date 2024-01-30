@@ -5,6 +5,8 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
 )
 
@@ -84,4 +86,29 @@ func (app *Config) errorJson(w http.ResponseWriter, err error, status ...int) er
 	payload.Message = err.Error()
 
 	return app.writeJSON(w, statusCode, payload)
+}
+
+func (app *Config) readString(qs url.Values, key string, defaultValue string) string {
+	s := qs.Get(key)
+
+	if s == "" {
+		return defaultValue
+	}
+
+	return s
+}
+
+
+
+func (app *Config) readInt(qs url.Values, key string, defaultValue int) (int, error) {
+	s := qs.Get(key)
+	if s == "" {
+		return defaultValue, nil
+	}
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		return 0, err
+	}
+
+	return i, nil
 }

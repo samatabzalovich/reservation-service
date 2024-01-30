@@ -79,7 +79,7 @@ INSTITUTION_PROTO_FILE := $(INSTITUTION_PROTO_DIR)/inst.proto
 INSTITUTION_OUT_DIR := $(INSTITUTION_PROTO_DIR)
 
 
-## build_proto: builds the proto files
+## build_proto: builds the proto_files files
 
 build_proto:
 	@echo "Building proto files..."
@@ -87,4 +87,22 @@ build_proto:
 	protoc --go_out=${BROKER_AUTH_OUT_DIR} --go_opt=paths=source_relative --go-grpc_out=${BROKER_AUTH_OUT_DIR} --go-grpc_opt=paths=source_relative --proto_path=${BROKER_AUTH_PROTO_DIR} ${BROKER_AUTH_PROTO_FILE}
 	protoc --go_out=${INSTITUTION_OUT_DIR} --go_opt=paths=source_relative --go-grpc_out=${INSTITUTION_OUT_DIR} --go-grpc_opt=paths=source_relative --proto_path=${INSTITUTION_PROTO_DIR} ${INSTITUTION_PROTO_FILE}
 	protoc --go_out=${BROKER_INST_OUT_DIR} --go_opt=paths=source_relative --go-grpc_out=${BROKER_INST_OUT_DIR} --go-grpc_opt=paths=source_relative --proto_path=${BROKER_INST_PROTO_DIR} ${BROKER_INST_PROTO_FILE}
+	@echo "Done!"
+
+
+## Migration paths
+DSN := postgres://postgres:190704Samat@localhost/postgres?sslmode=disable
+INSTITUTION_DIR_MIGR := ../institution-service/migrations
+AUTH_DIR_MIGR := ../authentication-service/migrations
+
+migrate_up: 
+	@echo "Migrating up..."
+	migrate -path ${INSTITUTION_DIR_MIGR} -database "${DSN}" up
+	migrate -path ${AUTH_DIR_MIGR} -database "${DSN}" up
+	@echo "Done!"
+
+migrate_down:
+	@echo "Migrating down..."
+	migrate -path ${INSTITUTION_DIR_MIGR} -database "${DSN}" down
+	migrate -path ${AUTH_DIR_MIGR} -database "${DSN}" down
 	@echo "Done!"

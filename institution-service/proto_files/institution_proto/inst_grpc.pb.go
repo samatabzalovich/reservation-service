@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v4.25.2
-// source: inst.proto
+// source: inst.proto_files
 
 package inst
 
@@ -281,7 +281,7 @@ var InstitutionService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "inst.proto",
+	Metadata: "inst.proto_files",
 }
 
 // CategoryServiceClient is the client API for CategoryService service.
@@ -403,5 +403,5 @@ var CategoryService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "inst.proto",
+	Metadata: "inst.proto_files",
 }

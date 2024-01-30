@@ -9,6 +9,7 @@ import (
 const webPort = "8081"
 
 type Config struct {
+	
 }
 
 func main() {

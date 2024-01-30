@@ -7,13 +7,6 @@ import (
 
 // RequestPayload describes the JSON that this service accepts as an HTTP Post request
 
-type RequestPayload struct {
-	Action string       `json:"action"`
-	Auth   AuthPayload  `json:"auth,omitempty"`
-	Reg    RegPayload   `json:"reg,omitempty"`
-	Token  TokenPayload `json:"token,omitempty"`
-	Sms    SmsPayload   `json:"sms,omitempty"`
-}
 
 func (app *Config) Broker(w http.ResponseWriter, r *http.Request) {
 	payload := jsonResponse{
@@ -24,12 +17,12 @@ func (app *Config) Broker(w http.ResponseWriter, r *http.Request) {
 	_ = app.writeJSON(w, http.StatusOK, payload)
 }
 
-func (app *Config) HandleSubmission(w http.ResponseWriter, r *http.Request) {
+func (app *Config) HandleAuthSubmission(w http.ResponseWriter, r *http.Request) {
 	var requestPayload RequestPayload
 
 	err := app.readJSON(w, r, &requestPayload)
 	if err != nil {
-		app.rpcErrorJson(w, err)
+		app.errorJson(w, err)
 		return
 	}
 
@@ -43,6 +36,6 @@ func (app *Config) HandleSubmission(w http.ResponseWriter, r *http.Request) {
 	case "verifySms":
 		app.VerifySmsViaGRpc(w, requestPayload)
 	default:
-		app.rpcErrorJson(w, errors.New("unknown action"))
+		app.errorJson(w, errors.New("unknown action"))
 	}
 }
