@@ -19,12 +19,11 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	InstitutionService_GetInstitution_FullMethodName            = "/inst.InstitutionService/GetInstitution"
-	InstitutionService_GetInstitutionsByCategory_FullMethodName = "/inst.InstitutionService/GetInstitutionsByCategory"
-	InstitutionService_CreateInstitution_FullMethodName         = "/inst.InstitutionService/CreateInstitution"
-	InstitutionService_UpdateInstitution_FullMethodName         = "/inst.InstitutionService/UpdateInstitution"
-	InstitutionService_DeleteInstitution_FullMethodName         = "/inst.InstitutionService/DeleteInstitution"
-	InstitutionService_SearchInstitutions_FullMethodName        = "/inst.InstitutionService/SearchInstitutions"
+	InstitutionService_GetInstitution_FullMethodName     = "/inst.InstitutionService/GetInstitution"
+	InstitutionService_CreateInstitution_FullMethodName  = "/inst.InstitutionService/CreateInstitution"
+	InstitutionService_UpdateInstitution_FullMethodName  = "/inst.InstitutionService/UpdateInstitution"
+	InstitutionService_DeleteInstitution_FullMethodName  = "/inst.InstitutionService/DeleteInstitution"
+	InstitutionService_SearchInstitutions_FullMethodName = "/inst.InstitutionService/SearchInstitutions"
 )
 
 // InstitutionServiceClient is the client API for InstitutionService service.
@@ -32,7 +31,6 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type InstitutionServiceClient interface {
 	GetInstitution(ctx context.Context, in *GetInstitutionsByIdRequest, opts ...grpc.CallOption) (*Institution, error)
-	GetInstitutionsByCategory(ctx context.Context, in *GetInstitutionsByCategoryRequest, opts ...grpc.CallOption) (*InstitutionsResponse, error)
 	CreateInstitution(ctx context.Context, in *CreateInstitutionRequest, opts ...grpc.CallOption) (*CreateInstitutionResponse, error)
 	UpdateInstitution(ctx context.Context, in *UpdateInstitutionRequest, opts ...grpc.CallOption) (*UpdateInstitutionResponse, error)
 	DeleteInstitution(ctx context.Context, in *DeleteInstitutionRequest, opts ...grpc.CallOption) (*DeleteInstitutionResponse, error)
@@ -50,15 +48,6 @@ func NewInstitutionServiceClient(cc grpc.ClientConnInterface) InstitutionService
 func (c *institutionServiceClient) GetInstitution(ctx context.Context, in *GetInstitutionsByIdRequest, opts ...grpc.CallOption) (*Institution, error) {
 	out := new(Institution)
 	err := c.cc.Invoke(ctx, InstitutionService_GetInstitution_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *institutionServiceClient) GetInstitutionsByCategory(ctx context.Context, in *GetInstitutionsByCategoryRequest, opts ...grpc.CallOption) (*InstitutionsResponse, error) {
-	out := new(InstitutionsResponse)
-	err := c.cc.Invoke(ctx, InstitutionService_GetInstitutionsByCategory_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +95,6 @@ func (c *institutionServiceClient) SearchInstitutions(ctx context.Context, in *S
 // for forward compatibility
 type InstitutionServiceServer interface {
 	GetInstitution(context.Context, *GetInstitutionsByIdRequest) (*Institution, error)
-	GetInstitutionsByCategory(context.Context, *GetInstitutionsByCategoryRequest) (*InstitutionsResponse, error)
 	CreateInstitution(context.Context, *CreateInstitutionRequest) (*CreateInstitutionResponse, error)
 	UpdateInstitution(context.Context, *UpdateInstitutionRequest) (*UpdateInstitutionResponse, error)
 	DeleteInstitution(context.Context, *DeleteInstitutionRequest) (*DeleteInstitutionResponse, error)
@@ -120,9 +108,6 @@ type UnimplementedInstitutionServiceServer struct {
 
 func (UnimplementedInstitutionServiceServer) GetInstitution(context.Context, *GetInstitutionsByIdRequest) (*Institution, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetInstitution not implemented")
-}
-func (UnimplementedInstitutionServiceServer) GetInstitutionsByCategory(context.Context, *GetInstitutionsByCategoryRequest) (*InstitutionsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetInstitutionsByCategory not implemented")
 }
 func (UnimplementedInstitutionServiceServer) CreateInstitution(context.Context, *CreateInstitutionRequest) (*CreateInstitutionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateInstitution not implemented")
@@ -163,24 +148,6 @@ func _InstitutionService_GetInstitution_Handler(srv interface{}, ctx context.Con
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(InstitutionServiceServer).GetInstitution(ctx, req.(*GetInstitutionsByIdRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _InstitutionService_GetInstitutionsByCategory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetInstitutionsByCategoryRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(InstitutionServiceServer).GetInstitutionsByCategory(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: InstitutionService_GetInstitutionsByCategory_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(InstitutionServiceServer).GetInstitutionsByCategory(ctx, req.(*GetInstitutionsByCategoryRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -267,10 +234,6 @@ var InstitutionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetInstitution",
 			Handler:    _InstitutionService_GetInstitution_Handler,
-		},
-		{
-			MethodName: "GetInstitutionsByCategory",
-			Handler:    _InstitutionService_GetInstitutionsByCategory_Handler,
 		},
 		{
 			MethodName: "CreateInstitution",

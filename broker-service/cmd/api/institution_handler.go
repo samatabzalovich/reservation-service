@@ -19,7 +19,7 @@ func (app *Config) HandleInstitutionSubmission(w http.ResponseWriter, r *http.Re
 	ctx := metadata.NewOutgoingContext(context.Background(), tempMetadata)
 	err = app.readJSON(w, r, &requestPayload)
 	if err != nil {
-		app.errorJson(w, err)
+		app.errorJson(w, errors.New("invalid institution"))
 		return
 	}
 
@@ -43,7 +43,7 @@ func (app *Config) ListInstitutions(w http.ResponseWriter, r *http.Request) {
 		Page       int
 		SearchText string
 		Sort       string
-		CategoryId int
+		Categories []int64
 	}
 	qs := r.URL.Query()
 
@@ -60,7 +60,7 @@ func (app *Config) ListInstitutions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	input.Sort = app.readString(qs, "sort", "id")
-	input.CategoryId, err = app.readInt(qs, "category_id", 0)
+	input.Categories, err = app.readListOfIntValues(qs, "category_id", []int64{})
 	if err != nil {
 		app.errorJson(w, err)
 		return
@@ -70,12 +70,9 @@ func (app *Config) ListInstitutions(w http.ResponseWriter, r *http.Request) {
 		Page:       input.Page,
 		SearchText: input.SearchText,
 		Sort:       input.Sort,
-		CategoryId: int64(input.CategoryId),
+		Categories: input.Categories,
 	}
 
-	if input.SearchText == "" {
-		app.GetInstitutionsByCategoryViaGRpc(w, filter)
-	} else {
-		app.SearchInstitutionsViaGRpc(w, filter)
-	}
+	app.SearchInstitutionsViaGRpc(w, filter)
+
 }

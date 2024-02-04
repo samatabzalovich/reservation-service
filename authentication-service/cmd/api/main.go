@@ -2,15 +2,18 @@ package main
 
 import (
 	auth "authentication-service/auth_proto"
+	employee "authentication-service/employee_proto"
 	"authentication-service/internal/data"
 	"authentication-service/internal/sms"
 	"database/sql"
 	"fmt"
-	"github.com/redis/go-redis/v9"
-	"google.golang.org/grpc"
 	"log"
 	"net"
 	"os"
+
+	"github.com/joho/godotenv"
+	"github.com/redis/go-redis/v9"
+	"google.golang.org/grpc"
 
 	_ "github.com/jackc/pgconn"
 	_ "github.com/jackc/pgx/v4"
@@ -29,7 +32,10 @@ type Config struct {
 
 func main() {
 	log.Println("Starting authentication service")
-
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 	// connect to DB
 	conn := connectToDB()
 	if conn == nil {
@@ -62,6 +68,7 @@ func (app *Config) grpcListen() {
 	auth.RegisterRegServiceServer(s, authService)
 	auth.RegisterAuthServiceServer(s, authService)
 	auth.RegisterSmsServiceServer(s, authService)
+	employee.RegisterTokenEmployeeRegisterServiceServer(s, &EmployeeService{Models: app.Models})
 	log.Printf("gRPC Server started on port %s", grpcPort)
 	err = s.Serve(lis)
 	if err != nil {

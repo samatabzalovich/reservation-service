@@ -16,7 +16,7 @@ type AuthPayload struct {
 
 func (app *Config) GetUserForToken(token string) (*AuthPayload, error) {
 
-	conn, err := grpc.Dial("authentication-service:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	conn, err := grpc.Dial("localhost:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
 		return nil, err
 	}

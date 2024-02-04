@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS employee (
+    id BIGSERIAL PRIMARY KEY,
+    inst_id BIGINT REFERENCES institution (id) ON DELETE CASCADE,
+    user_id BIGINT REFERENCES users (id) ON DELETE CASCADE,
+    description text,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)

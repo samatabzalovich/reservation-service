@@ -31,18 +31,19 @@ type RegPayload struct {
 }
 
 type InstPayload struct {
-	Id          int64  `json:"id,omitempty"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Website     string `json:"website"`
-	OwnerId     int64  `json:"owner_id"`
-	Latitude    string `json:"latitude"`
-	Longitude   string `json:"longitude"`
-	Address     string `json:"address"`
-	Phone       string `json:"phone"`
-	Country     string `json:"country"`
-	City        string `json:"city"`
-	CategoryId  int64  `json:"category_id"`
+	Id           int64       `json:"id,omitempty"`
+	Name         string      `json:"name"`
+	Description  string      `json:"description"`
+	Website      string      `json:"website"`
+	OwnerId      int64       `json:"owner_id"`
+	Latitude     string      `json:"latitude"`
+	Longitude    string      `json:"longitude"`
+	Address      string      `json:"address"`
+	Phone        string      `json:"phone"`
+	Country      string      `json:"country"`
+	City         int32       `json:"city"`
+	Category     []int64     `json:"categories"`
+	WorkingHours []workHours `json:"workingHours"`
 }
 
 type FilterPayload struct {
@@ -50,5 +51,11 @@ type FilterPayload struct {
 	Page       int
 	SearchText string
 	Sort       string
-	CategoryId int64
+	Categories []int64
+}
+
+type workHours struct {
+	Day   int    `json:"day"`
+	Open  string `json:"open"`
+	Close string `json:"close"`
 }

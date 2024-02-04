@@ -11,7 +11,7 @@ import (
 
 func (app *Config) CreateTokenViaGRpc(w http.ResponseWriter, r RequestPayload) {
 
-	conn, err := grpc.Dial("authentication-service:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	conn, err := grpc.Dial("localhost:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
 		app.rpcErrorJson(w, err)
 		return
@@ -46,7 +46,7 @@ func (app *Config) CreateTokenViaGRpc(w http.ResponseWriter, r RequestPayload) {
 }
 
 func (app *Config) RegViaGRpc(w http.ResponseWriter, r RequestPayload) {
-	conn, err := grpc.Dial("authentication-service:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	conn, err := grpc.Dial("localhost:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
 		app.rpcErrorJson(w, err)
 		return
@@ -80,7 +80,7 @@ func (app *Config) RegViaGRpc(w http.ResponseWriter, r RequestPayload) {
 }
 
 func (app *Config) AuthViaGRpc(w http.ResponseWriter, r RequestPayload) {
-	conn, err := grpc.Dial("authentication-service:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	conn, err := grpc.Dial("localhost:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
 		app.rpcErrorJson(w, err)
 		return
@@ -105,7 +105,7 @@ func (app *Config) AuthViaGRpc(w http.ResponseWriter, r RequestPayload) {
 }
 
 func (app *Config) VerifySmsViaGRpc(w http.ResponseWriter, r RequestPayload) {
-	conn, err := grpc.Dial("authentication-service:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	conn, err := grpc.Dial("localhost:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
 		app.rpcErrorJson(w, err)
 		return

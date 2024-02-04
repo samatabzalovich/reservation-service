@@ -36,6 +36,14 @@ var (
 	ErrInvalidAddress = errors.New("invalid address")
 	//ErrEditConflict is used when the update conflicts with another update
 	ErrEditConflict = errors.New("edit conflict")
+	//ErrInvalidWorkingHours is used when the working hours are not valid
+	ErrInvalidWorkingHours = errors.New("invalid working hours")
+	//ErrInvalidDay is used when the day is not valid
+	ErrInvalidDay = errors.New("invalid day")
+	//ErrInvalidOpen is used when the open time is not valid
+	ErrInvalidOpen = errors.New("invalid open time")
+	//ErrInvalidClose is used when the close time is not valid
+	ErrInvalidClose = errors.New("invalid close time")
 )
 
 var db *sql.DB
@@ -61,9 +69,9 @@ type Models struct {
 		Insert(institution *Institution) (int64, error)
 		GetVersionByIdForOwner(ownerId, id int64) (int, error)
 		GetById(id int64) (*Institution, error)
-		GetAll(categoryId int64, filters Filters) ([]*Institution, Metadata, error)
+		//GetAll(categories []int64, filters Filters) ([]*Institution, Metadata, error)
 		Update(institution *Institution) error
 		Delete(id int64) error
-		Search(categoryId int64, searchText string, filters Filters) ([]*Institution, Metadata, error)
+		Search(categories []int64, searchText string, filters Filters) ([]*Institution, Metadata, error)
 	}
 }

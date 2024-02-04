@@ -1,0 +1,1 @@
+ DROP INDEX if exists institution_search_idx;

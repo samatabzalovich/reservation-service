@@ -38,7 +38,7 @@ type Models struct {
 	Tokens interface {
 		DeleteAllForUser(scope string, userID int64) error
 		Insert(token *Token) error
-		New(userID int64, ttl time.Duration, scope string) (*Token, error)
+		New(userID int64, ttl time.Duration, scope string, instId int64) (*Token, error)
 	}
 }
 

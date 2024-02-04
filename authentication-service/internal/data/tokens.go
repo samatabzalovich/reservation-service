@@ -11,23 +11,25 @@ import (
 )
 
 const (
-	ScopeActivation     = "activation"
+	ScopeEmployeeReg    = "employee_registration"
 	ScopeAuthentication = "authentication"
 )
 
 type Token struct {
-	Plaintext string    `json:"token"`
-	Hash      []byte    `json:"-"`
-	UserID    int64     `json:"-"`
-	Expiry    time.Time `json:"expiry"`
-	Scope     string    `json:"-"`
+	Plaintext     string    `json:"token"`
+	Hash          []byte    `json:"-"`
+	UserID        int64     `json:"-"`
+	Expiry        time.Time `json:"expiry"`
+	InstitutionId int64     `json:"-"`
+	Scope         string    `json:"-"`
 }
 
-func generateToken(userID int64, ttl time.Duration, scope string) (*Token, error) {
+func generateToken(userID int64, ttl time.Duration, scope string, instId int64) (*Token, error) {
 	token := &Token{
-		UserID: userID,
-		Expiry: time.Now().Add(ttl),
-		Scope:  scope,
+		UserID:        userID,
+		Expiry:        time.Now().Add(ttl),
+		Scope:         scope,
+		InstitutionId: instId,
 	}
 
 	randomBytes := make([]byte, 16)
@@ -53,8 +55,8 @@ type TokenModel struct {
 	DB *sql.DB
 }
 
-func (m TokenModel) New(userID int64, ttl time.Duration, scope string) (*Token, error) {
-	token, err := generateToken(userID, ttl, scope)
+func (m TokenModel) New(userID int64, ttl time.Duration, scope string, instId int64) (*Token, error) {
+	token, err := generateToken(userID, ttl, scope, instId)
 	if err != nil {
 		return nil, err
 	}
@@ -65,9 +67,14 @@ func (m TokenModel) New(userID int64, ttl time.Duration, scope string) (*Token, 
 // Insert() adds the data for a specific token to the tokens table.
 func (m TokenModel) Insert(token *Token) error {
 	query := `
-	INSERT INTO tokens (hash, user_id, expiry, scope)
-	VALUES ($1, $2, $3, $4)`
+	INSERT INTO tokens (hash, user_id, expiry, scope, institution_id)
+	VALUES ($1, $2, $3, $4, $5)`
 	args := []any{token.Hash, token.UserID, token.Expiry, token.Scope}
+	if token.InstitutionId != 0 {
+		args = append(args, token.InstitutionId)
+	} else {
+		args = append(args, nil)
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	_, err := m.DB.ExecContext(ctx, query, args...)

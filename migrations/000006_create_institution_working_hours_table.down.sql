@@ -1,0 +1,2 @@
+DROP INDEX IF EXISTS idx_institution_working_hours_institution_id;
+DROP TABLE IF EXISTS institution_working_hours;

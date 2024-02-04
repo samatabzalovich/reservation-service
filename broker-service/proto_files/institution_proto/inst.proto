@@ -15,10 +15,18 @@ message Institution {
     string address = 8;
     string phone = 9;
     string country = 10;
-    string city = 11;
-    int64 category_id = 12;
-    int32 version = 13;
+    int32 city = 11;
+    repeated int64 categories = 12;
+    repeated WorkingHours working_hours = 13;
+    int32 version = 14;
 }
+
+message WorkingHours {
+    int32 day = 1;
+    string open = 2;
+    string close = 3;
+}
+
 
 message InstitutionCategory {
     int64 id = 1;
@@ -31,44 +39,16 @@ message GetInstitutionsByIdRequest {
     int64 id = 1;
 }
 
-message GetInstitutionsByCategoryRequest {
-    int32 page_number = 1;
-    int32 page_size = 2;
-    int64 category_id = 3;
-    string sort = 4;
-}
 
 message CreateInstitutionRequest {
-    string name = 1;
-    string description = 2;
-    string website = 3;
-    int64 owner_id = 4;
-    string latitude = 5;
-    string longitude = 6;
-    string address = 7;
-    string phone = 8;
-    string country = 9;
-    string city = 10;
-    int64 category_id = 11;
+    Institution institution = 1;
 }
 message CreateInstitutionResponse {
     int64 id = 1;
 }
 
 message UpdateInstitutionRequest {
-    int64 id = 1;
-    string name = 2;
-    string description = 3;
-    string website = 4;
-    int64 owner_id = 5;
-    string latitude = 6;
-    string longitude = 7;
-    string address = 8;
-    string phone = 9;
-    string country = 10;
-    string city = 11;
-    int64 category_id = 12;
-    int32 version = 13;
+    Institution institution = 1;
 }
 
 message UpdateInstitutionResponse {
@@ -88,7 +68,7 @@ message SearchInstitutionsRequest {
     int32 page_size = 2;
     string searchText = 3;
     string sort = 4;
-    int64 category_id = 5;
+    repeated int64 categories = 12;
 }
 
 message Metadata {
@@ -106,12 +86,10 @@ message InstitutionsResponse {
 
 message CategoryResponse {
     repeated InstitutionCategory category = 1;
-    
 }
 
 service InstitutionService {
     rpc GetInstitution(GetInstitutionsByIdRequest) returns (Institution) {}
-    rpc GetInstitutionsByCategory(GetInstitutionsByCategoryRequest) returns (InstitutionsResponse) {}
     rpc CreateInstitution(CreateInstitutionRequest) returns (CreateInstitutionResponse) {}
     rpc UpdateInstitution(UpdateInstitutionRequest) returns (UpdateInstitutionResponse) {}
     rpc DeleteInstitution(DeleteInstitutionRequest) returns (DeleteInstitutionResponse) {}

@@ -54,26 +54,43 @@ BROKER_INST_PROTO_DIR := ../broker-service/proto_files/institution_proto
 BROKER_INST_PROTO_FILE := $(BROKER_INST_PROTO_DIR)/inst.proto
 BROKER_INST_OUT_DIR := $(BROKER_INST_PROTO_DIR)
 
+AUTH_EMP_PROTO_DIR := ../authentication-service/employee_proto
+AUTH_EMP_PROTO_FILE := $(AUTH_EMP_PROTO_DIR)/employee_proto.proto
+AUTH_EMP_OUT_DIR := $(AUTH_EMP_PROTO_DIR)
+
+EMPLOYEE_PROTO_DIR := ../staff-service/proto_files/employee_proto
+EMPLOYEE_PROTO_FILE := $(EMPLOYEE_PROTO_DIR)/employee_proto.proto
+EMPLOYEE_OUT_DIR := $(EMPLOYEE_PROTO_DIR)
+
+EMPLOYEE_AUTH_PROTO_DIR := ../staff-service/proto_files/auth_proto
+EMPLOYEE_AUTH_PROTO_FILE := $(EMPLOYEE_AUTH_PROTO_DIR)/auth.proto
+EMPLOYEE_AUTH_OUT_DIR := $(EMPLOYEE_AUTH_PROTO_DIR)
+
 INSTITUTION_PROTO_DIR := ../institution-service/proto_files/institution_proto
 INSTITUTION_PROTO_FILE := $(INSTITUTION_PROTO_DIR)/inst.proto
 INSTITUTION_OUT_DIR := $(INSTITUTION_PROTO_DIR)
 
 
-## build_proto: builds the proto_files files
 
+## build_proto: builds the proto_files files
+# export GO_PATH=~/go
+# export PATH=$PATH:/$GO_PATH/bin
 build_proto:
 	@echo "Building proto files..."
 	protoc --go_out=${AUTH_OUT_DIR} --go_opt=paths=source_relative --go-grpc_out=${AUTH_OUT_DIR} --go-grpc_opt=paths=source_relative --proto_path=${AUTH_PROTO_DIR} ${AUTH_PROTO_FILE}
 	protoc --go_out=${BROKER_AUTH_OUT_DIR} --go_opt=paths=source_relative --go-grpc_out=${BROKER_AUTH_OUT_DIR} --go-grpc_opt=paths=source_relative --proto_path=${BROKER_AUTH_PROTO_DIR} ${BROKER_AUTH_PROTO_FILE}
 	protoc --go_out=${INSTITUTION_OUT_DIR} --go_opt=paths=source_relative --go-grpc_out=${INSTITUTION_OUT_DIR} --go-grpc_opt=paths=source_relative --proto_path=${INSTITUTION_PROTO_DIR} ${INSTITUTION_PROTO_FILE}
 	protoc --go_out=${BROKER_INST_OUT_DIR} --go_opt=paths=source_relative --go-grpc_out=${BROKER_INST_OUT_DIR} --go-grpc_opt=paths=source_relative --proto_path=${BROKER_INST_PROTO_DIR} ${BROKER_INST_PROTO_FILE}
+	protoc --go_out=${AUTH_EMP_OUT_DIR} --go_opt=paths=source_relative --go-grpc_out=${AUTH_EMP_OUT_DIR} --go-grpc_opt=paths=source_relative --proto_path=${AUTH_EMP_PROTO_DIR} ${AUTH_EMP_PROTO_FILE}
+	protoc --go_out=${EMPLOYEE_OUT_DIR} --go_opt=paths=source_relative --go-grpc_out=${EMPLOYEE_OUT_DIR} --go-grpc_opt=paths=source_relative --proto_path=${EMPLOYEE_PROTO_DIR} ${EMPLOYEE_PROTO_FILE}
+	protoc --go_out=${EMPLOYEE_AUTH_OUT_DIR} --go_opt=paths=source_relative --go-grpc_out=${EMPLOYEE_AUTH_OUT_DIR} --go-grpc_opt=paths=source_relative --proto_path=${EMPLOYEE_AUTH_PROTO_DIR} ${EMPLOYEE_AUTH_PROTO_FILE}
 	@echo "Done!"
 
 
 ## Migration paths
 DSN := postgres://postgres:190704Samat@localhost/reserveHub?sslmode=disable
 DIR_MIGRATIONS := ../migrations
-NAME := insert_temp_categories
+NAME := add_institution_table_index
 
 migrate_up:
 	@echo "Migrating up..."
@@ -86,6 +103,8 @@ migrate_down:
 	@echo "Migrating down..."
 	migrate -path ${DIR_MIGRATIONS} -database "${DSN}" down
 	@echo "Done!"
+
+
 
 migrate_create:
 	@echo "Creating migration..."

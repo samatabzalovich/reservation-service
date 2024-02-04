@@ -1,6 +1,7 @@
 package main
 
 import (
+	inst "broker-service/proto_files/institution_proto"
 	"encoding/json"
 	"errors"
 	"io"
@@ -98,7 +99,23 @@ func (app *Config) readString(qs url.Values, key string, defaultValue string) st
 	return s
 }
 
+func (app *Config) readListOfIntValues(qs url.Values, key string, defaultValue []int64) ([]int64, error) {
+	s := qs.Get(key)
 
+	if s == "" {
+		return defaultValue, nil
+	}
+	res := []int64{}
+	for _, v := range strings.Split(s, ",") {
+		i, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			return defaultValue, err
+		}
+		res = append(res, i)
+	}
+
+	return res, nil
+}
 
 func (app *Config) readInt(qs url.Values, key string, defaultValue int) (int, error) {
 	s := qs.Get(key)
@@ -111,4 +128,17 @@ func (app *Config) readInt(qs url.Values, key string, defaultValue int) (int, er
 	}
 
 	return i, nil
+}
+
+func (app *Config) getWorkHours(requestPayload RequestPayload) []*inst.WorkingHours {
+	var workHours []*inst.WorkingHours
+	for _, wh := range requestPayload.Institution.WorkingHours {
+		temp := &inst.WorkingHours{
+			Day:   int32(wh.Day),
+			Open:  wh.Open,
+			Close: wh.Close,
+		}
+		workHours = append(workHours, temp)
+	}
+	return workHours
 }

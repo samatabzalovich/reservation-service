@@ -1,6 +1,6 @@
 CREATE EXTENSION IF NOT EXISTS citext;
 Drop type if exists USERTYPE;
-Create TYPE USERTYPE as ENUM ('client', 'owner', 'admin');
+Create TYPE USERTYPE as ENUM ('client', 'owner', 'admin', 'employee');
 CREATE TABLE IF NOT EXISTS users (
 id bigserial PRIMARY KEY,
 created_at timestamp(0) with time zone NOT NULL DEFAULT NOW(),
