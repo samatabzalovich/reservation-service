@@ -2,7 +2,7 @@ package main
 
 import (
 	"database/sql"
-	"github.com/redis/go-redis/v9"
+	// "github.com/redis/go-redis/v9"
 	"log"
 	"os"
 	"time"
@@ -46,11 +46,11 @@ func connectToDB() *sql.DB {
 	}
 }
 
-func openRedisConn() *redis.Client {
-	client := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
-	return client
-}
+// func openRedisConn() *redis.Client {
+// 	client := redis.NewClient(&redis.Options{
+// 		Addr:     "redis:6379",
+// 		Password: "", // no password set
+// 		DB:       0,  // use default DB
+// 	})
+// 	return client
+// }

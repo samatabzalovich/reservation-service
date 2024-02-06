@@ -2,6 +2,7 @@ package data
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -12,8 +13,8 @@ import (
 )
 
 const (
-	// TimeFormat is the format for the time
-	TimeParse = "15:04:00"
+	ScopeEmployeeReg = "employee_registration"
+	TimeParse        = "15:04:00"
 )
 
 type Institution struct {
@@ -221,70 +222,6 @@ func (m InstitutionModel) GetById(id int64) (*Institution, error) {
 	return &institution, nil
 }
 
-//func (m InstitutionModel) GetAll(categories []int64, filters Filters) ([]*Institution, Metadata, error) {
-//	query := fmt.Sprintf(`SELECT count(*) OVER(), i.id, i.name, i.description, i.website,
-//       i.owner_id, i.latitude, i.longitude, i.address, i.phone,
-//       i.country, i.city, array_agg(ic.category_id) AS categories
-//FROM institution i
-//         JOIN (SELECT inst_id as id
-//               FROM institution_category
-//               WHERE (($1::int[] IS NULL OR category_id = ANY($1)))
-//               GROUP BY inst_id) fi ON i.id = fi.id
-//         LEFT JOIN institution_category ic ON i.id = ic.inst_id
-//GROUP BY i.id ORDER BY %s %s, id ASC LIMIT $2 OFFSET $3`, filters.sortColumn(), filters.sortDirection())
-//	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-//	defer cancel()
-//	rows, err := m.DB.QueryContext(ctx, query, pq.Array(categories), filters.limit(), filters.offset())
-//	if err != nil {
-//		return nil, Metadata{}, err
-//	}
-//	defer rows.Close()
-//	var institutions []*Institution
-//	totalRecords := 0
-//	for rows.Next() {
-//		var institution Institution
-//		var allCategories []int64
-//		err = rows.Scan(&totalRecords, &institution.ID, &institution.Name, &institution.Description, &institution.Website, &institution.OwnerId, &institution.Latitude, &institution.Longitude, &institution.Address, &institution.Phone, &institution.Country, &institution.City, pq.Array(&categories))
-//		if err != nil {
-//			return nil, Metadata{}, err
-//		}
-//		institution.Categories = allCategories
-//		query = `SELECT day_of_week, open_time, close_time FROM institution_working_hours WHERE institution_id = $1`
-//
-//		workingHoursRecords, err := m.DB.QueryContext(ctx, query, institution.ID)
-//		if err != nil {
-//			return nil, Metadata{}, err
-//		}
-//		for workingHoursRecords.Next() {
-//			var openTime string
-//			var closeTime string
-//			var workingHours WorkingHours
-//			err = workingHoursRecords.Scan(&workingHours.DayOfWeek, &openTime, &closeTime)
-//			if err != nil {
-//				return nil, Metadata{}, err
-//			}
-//			workingHours.OpenTime, err = time.Parse(TimeParse, openTime)
-//			if err != nil {
-//				return nil, Metadata{}, ErrInvalidOpen
-//			}
-//			workingHours.CloseTime, err = time.Parse(TimeParse, closeTime)
-//			if err != nil {
-//				return nil, Metadata{}, ErrInvalidClose
-//			}
-//			institution.WorkingHours = append(institution.WorkingHours, &workingHours)
-//		}
-//		if err = workingHoursRecords.Err(); err != nil {
-//			return nil, Metadata{}, err
-//		}
-//		institutions = append(institutions, &institution)
-//	}
-//	if err = rows.Err(); err != nil {
-//		return nil, Metadata{}, err
-//	}
-//	metadata := calculateMetadata(totalRecords, filters.Page, filters.PageSize)
-//	return institutions, metadata, nil
-//}
-
 func (m InstitutionModel) Update(institution *Institution) error {
 	tx, err := m.DB.Begin()
 	if err != nil {
@@ -411,4 +348,22 @@ func (m InstitutionModel) Delete(id int64) error {
 		return err
 	}
 	return nil
+}
+
+func (m InstitutionModel) GetForToken(tokenScope, tokenPlaintext string) (*Institution, error) {
+	tokenHash := sha256.Sum256([]byte(tokenPlaintext))
+	query := `SELECT i.id, i.name, i.description, i.website, i.owner_id, i.latitude, i.longitude, i.address, i.phone, i.country, i.city
+	FROM institution i
+	JOIN tokens t ON i.owner_id = t.user_id
+	WHERE t.hash = $1
+	AND t.scope = $2
+	AND t.expiry > $3`
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	var institution Institution
+	err := m.DB.QueryRowContext(ctx, query, tokenHash[:], tokenScope, time.Now()).Scan(&institution.ID, &institution.Name, &institution.Description, &institution.Website, &institution.OwnerId, &institution.Latitude, &institution.Longitude, &institution.Address, &institution.Phone, &institution.Country, &institution.City)
+	if err != nil {
+		return nil, err
+	}
+	return &institution, nil
 }

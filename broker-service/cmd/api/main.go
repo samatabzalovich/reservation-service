@@ -13,7 +13,7 @@ type Config struct {
 func main() {
 
 	app := Config{
-		port: "8080",
+		port: "80",
 	}
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%s", app.port),

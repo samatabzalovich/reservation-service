@@ -73,5 +73,6 @@ type Models struct {
 		Update(institution *Institution) error
 		Delete(id int64) error
 		Search(categories []int64, searchText string, filters Filters) ([]*Institution, Metadata, error)
+		GetForToken(tokenScope, token string) (*Institution, error)
 	}
 }

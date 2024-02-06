@@ -3,5 +3,6 @@ go 1.21.1
 use (
 	./authentication-service
 	./broker-service
+	./staff-service
 	./institution-service
 )

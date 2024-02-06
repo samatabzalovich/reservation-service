@@ -1,2 +1,7 @@
 /institution-service/.env
 /authentication-service/.env
+/project/db-data
+/institution-service/instApp
+/broker-service/brokerApp
+/authentication-service/authApp
+/staff-service/.env

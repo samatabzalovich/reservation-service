@@ -24,6 +24,7 @@ const (
 	InstitutionService_UpdateInstitution_FullMethodName  = "/inst.InstitutionService/UpdateInstitution"
 	InstitutionService_DeleteInstitution_FullMethodName  = "/inst.InstitutionService/DeleteInstitution"
 	InstitutionService_SearchInstitutions_FullMethodName = "/inst.InstitutionService/SearchInstitutions"
+	InstitutionService_GetForToken_FullMethodName        = "/inst.InstitutionService/GetForToken"
 )
 
 // InstitutionServiceClient is the client API for InstitutionService service.
@@ -35,6 +36,7 @@ type InstitutionServiceClient interface {
 	UpdateInstitution(ctx context.Context, in *UpdateInstitutionRequest, opts ...grpc.CallOption) (*UpdateInstitutionResponse, error)
 	DeleteInstitution(ctx context.Context, in *DeleteInstitutionRequest, opts ...grpc.CallOption) (*DeleteInstitutionResponse, error)
 	SearchInstitutions(ctx context.Context, in *SearchInstitutionsRequest, opts ...grpc.CallOption) (*InstitutionsResponse, error)
+	GetForToken(ctx context.Context, in *GetInstForTokenRequest, opts ...grpc.CallOption) (*Institution, error)
 }
 
 type institutionServiceClient struct {
@@ -90,6 +92,15 @@ func (c *institutionServiceClient) SearchInstitutions(ctx context.Context, in *S
 	return out, nil
 }
 
+func (c *institutionServiceClient) GetForToken(ctx context.Context, in *GetInstForTokenRequest, opts ...grpc.CallOption) (*Institution, error) {
+	out := new(Institution)
+	err := c.cc.Invoke(ctx, InstitutionService_GetForToken_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // InstitutionServiceServer is the server API for InstitutionService service.
 // All implementations must embed UnimplementedInstitutionServiceServer
 // for forward compatibility
@@ -99,6 +110,7 @@ type InstitutionServiceServer interface {
 	UpdateInstitution(context.Context, *UpdateInstitutionRequest) (*UpdateInstitutionResponse, error)
 	DeleteInstitution(context.Context, *DeleteInstitutionRequest) (*DeleteInstitutionResponse, error)
 	SearchInstitutions(context.Context, *SearchInstitutionsRequest) (*InstitutionsResponse, error)
+	GetForToken(context.Context, *GetInstForTokenRequest) (*Institution, error)
 	mustEmbedUnimplementedInstitutionServiceServer()
 }
 
@@ -120,6 +132,9 @@ func (UnimplementedInstitutionServiceServer) DeleteInstitution(context.Context, 
 }
 func (UnimplementedInstitutionServiceServer) SearchInstitutions(context.Context, *SearchInstitutionsRequest) (*InstitutionsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SearchInstitutions not implemented")
+}
+func (UnimplementedInstitutionServiceServer) GetForToken(context.Context, *GetInstForTokenRequest) (*Institution, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetForToken not implemented")
 }
 func (UnimplementedInstitutionServiceServer) mustEmbedUnimplementedInstitutionServiceServer() {}
 
@@ -224,6 +239,24 @@ func _InstitutionService_SearchInstitutions_Handler(srv interface{}, ctx context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _InstitutionService_GetForToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetInstForTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InstitutionServiceServer).GetForToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: InstitutionService_GetForToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InstitutionServiceServer).GetForToken(ctx, req.(*GetInstForTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // InstitutionService_ServiceDesc is the grpc.ServiceDesc for InstitutionService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -250,6 +283,10 @@ var InstitutionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SearchInstitutions",
 			Handler:    _InstitutionService_SearchInstitutions_Handler,
+		},
+		{
+			MethodName: "GetForToken",
+			Handler:    _InstitutionService_GetForToken_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

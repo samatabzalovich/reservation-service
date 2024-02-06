@@ -11,7 +11,6 @@ import (
 	"net"
 	"os"
 
-	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
 	"google.golang.org/grpc"
 
@@ -32,10 +31,6 @@ type Config struct {
 
 func main() {
 	log.Println("Starting authentication service")
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
 	// connect to DB
 	conn := connectToDB()
 	if conn == nil {

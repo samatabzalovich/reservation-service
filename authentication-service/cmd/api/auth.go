@@ -2,7 +2,6 @@ package main
 
 import (
 	auth "authentication-service/auth_proto"
-	employee "authentication-service/employee_proto"
 	data2 "authentication-service/internal/data"
 	"authentication-service/internal/validator"
 	"context"
@@ -187,7 +186,7 @@ func (authServer *AuthService) ActivateUser(ctx context.Context, req *auth.SmsRe
 			return res, err
 		}
 		// return response
-		res := &auth.TokenResponse{Result: token.Plaintext, User: &auth.User{UserName: exist.UserName, Email: exist.Email, Type: exist.Type, Id: exist.ID, Activated: exist.Activated}}
+		res := &auth.TokenResponse{Result: token.Plaintext, User: &auth.User{UserName: exist.UserName, Email: exist.Email, Type: exist.Type, Id: exist.ID, Activated: true}}
 		return res, nil
 	} else {
 		if !authServer.checkSmsCode(ctx, input.Code, input.PhoneNumber) {
@@ -205,39 +204,7 @@ func (authServer *AuthService) ActivateUser(ctx context.Context, req *auth.SmsRe
 			return res, err
 		}
 		// return response
-		res := &auth.TokenResponse{Result: token.Plaintext, User: &auth.User{UserName: exist.UserName, Email: exist.Email, Type: exist.Type, Id: exist.ID, Activated: exist.Activated}}
+		res := &auth.TokenResponse{Result: token.Plaintext, User: &auth.User{UserName: exist.UserName, Email: exist.Email, Type: exist.Type, Id: exist.ID, Activated: true}}
 		return res, nil
 	}
-}
-
-func (employeeService *EmployeeService) RegisterEmployee(ctx context.Context, req *employee.TokenEmployeeRegisterRequest) (*employee.TokenEmployeeRegisterResponse, error) {
-	token := req.GetToken()
-	instId := req.GetInstitutionId()
-	v := validator.New()
-	data2.ValidateTokenPlaintext(v, token)
-	if !v.Valid() {
-		res := &employee.TokenEmployeeRegisterResponse{Result: "token is not valid"}
-		return res, errors.New("not valid")
-	}
-	exist, err := employeeService.Models.Users.GetForToken(data2.ScopeAuthentication, token)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			res := &employee.TokenEmployeeRegisterResponse{Result: "token is incorrect!"}
-			return res, nil
-		} else {
-			res := &employee.TokenEmployeeRegisterResponse{Result: "server error!"}
-			return res, err
-		}
-	}
-
-	employeeRegToken, err := employeeService.Models.Tokens.New(exist.ID, 5*time.Minute, data2.ScopeEmployeeReg, instId)
-	if err != nil {
-		res := &employee.TokenEmployeeRegisterResponse{Result: "server error"}
-
-		return res, err
-	}
-
-	// return response
-	res := &employee.TokenEmployeeRegisterResponse{Token: employeeRegToken.Plaintext, Result: "employee registration token created"}
-	return res, nil
 }

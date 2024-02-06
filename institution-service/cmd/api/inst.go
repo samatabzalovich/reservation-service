@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	data "institution-service/internal/data"
 	inst "institution-service/proto_files/institution_proto"
 )
@@ -16,6 +17,7 @@ func (instService *InstitutionService) CreateInstitution(ctx context.Context, re
 	if workHours == nil {
 		return &inst.CreateInstitutionResponse{Id: 0}, data.ErrInvalidWorkingHours
 	}
+
 	institution, err := data.NewInstitution(
 		1,
 		req.GetInstitution().Name,
@@ -144,11 +146,27 @@ func (instService *InstitutionService) SearchInstitutions(ctx context.Context, r
 	return &inst.InstitutionsResponse{Institution: institutionsResponse, Metadata: metadataResponse}, nil
 }
 
-func (instService *InstitutionService) isCategoriesIdValid(categories []int64) bool {
-	for _, id := range categories {
-		if id < 1 {
-			return false
-		}
+func (instService *InstitutionService) GetForToken(ctx context.Context, req *inst.GetInstForTokenRequest) (*inst.Institution, error) {
+	token := req.GetToken()
+	if token == "" && len(token) != 26 {
+		return nil, errors.New("token is not valid")
 	}
-	return true
+
+	institution, err := instService.Models.Institutions.GetForToken(data.ScopeEmployeeReg, token)
+	if err != nil {
+		return nil, err
+	}
+	return &inst.Institution{
+		Id:          institution.ID,
+		Name:        institution.Name,
+		Description: institution.Description,
+		Website:     institution.Website,
+		OwnerId:     institution.OwnerId,
+		Latitude:    institution.Latitude,
+		Longitude:   institution.Longitude,
+		Address:     institution.Address,
+		Phone:       institution.Phone,
+		Country:     institution.Country,
+		City:        institution.City,
+	}, nil
 }

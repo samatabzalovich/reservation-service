@@ -88,12 +88,17 @@ message CategoryResponse {
     repeated InstitutionCategory category = 1;
 }
 
+message GetInstForTokenRequest {
+    string token = 1;
+}
+
 service InstitutionService {
     rpc GetInstitution(GetInstitutionsByIdRequest) returns (Institution) {}
     rpc CreateInstitution(CreateInstitutionRequest) returns (CreateInstitutionResponse) {}
     rpc UpdateInstitution(UpdateInstitutionRequest) returns (UpdateInstitutionResponse) {}
     rpc DeleteInstitution(DeleteInstitutionRequest) returns (DeleteInstitutionResponse) {}
     rpc SearchInstitutions(SearchInstitutionsRequest) returns (InstitutionsResponse) {}
+    rpc GetForToken(GetInstForTokenRequest) returns (Institution) {}
 }
 
 service CategoryService {

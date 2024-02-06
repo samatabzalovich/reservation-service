@@ -1,0 +1,107 @@
+syntax = "proto3";
+
+package inst;
+
+option go_package = "/inst";
+
+message Institution {
+    int64 id = 1;
+    string name = 2;
+    string description = 3;
+    string website = 4;
+    int64 owner_id = 5;
+    string latitude = 6;
+    string longitude = 7;
+    string address = 8;
+    string phone = 9;
+    string country = 10;
+    int32 city = 11;
+    repeated int64 categories = 12;
+    repeated WorkingHours working_hours = 13;
+    int32 version = 14;
+}
+
+message WorkingHours {
+    int32 day = 1;
+    string open = 2;
+    string close = 3;
+}
+
+
+message InstitutionCategory {
+    int64 id = 1;
+    string name = 2;
+    string description = 3;
+}
+message GetInstitutionCategoriesRequest{}
+
+message GetInstitutionsByIdRequest {
+    int64 id = 1;
+}
+
+
+message CreateInstitutionRequest {
+    Institution institution = 1;
+}
+message CreateInstitutionResponse {
+    int64 id = 1;
+}
+
+message UpdateInstitutionRequest {
+    Institution institution = 1;
+}
+
+message UpdateInstitutionResponse {
+    int64 id = 1;
+}
+
+message DeleteInstitutionRequest {
+    int64 id = 1;
+}
+message DeleteInstitutionResponse {
+    int64 id = 1;
+}
+
+
+message SearchInstitutionsRequest {
+    int32 page_number = 1;
+    int32 page_size = 2;
+    string searchText = 3;
+    string sort = 4;
+    repeated int64 categories = 12;
+}
+
+message Metadata {
+    int32 current_page = 1;
+    int32 page_size = 2;
+    int32 last_page = 3;
+    int32 total_records = 4;
+    int32 first_page = 5;
+}
+
+message InstitutionsResponse {
+    repeated Institution institution = 1;
+    Metadata metadata = 2;
+}
+
+message CategoryResponse {
+    repeated InstitutionCategory category = 1;
+}
+
+message GetInstForTokenRequest {
+    string token = 1;
+}
+
+service InstitutionService {
+    rpc GetInstitution(GetInstitutionsByIdRequest) returns (Institution) {}
+    rpc CreateInstitution(CreateInstitutionRequest) returns (CreateInstitutionResponse) {}
+    rpc UpdateInstitution(UpdateInstitutionRequest) returns (UpdateInstitutionResponse) {}
+    rpc DeleteInstitution(DeleteInstitutionRequest) returns (DeleteInstitutionResponse) {}
+    rpc SearchInstitutions(SearchInstitutionsRequest) returns (InstitutionsResponse) {}
+    rpc GetForToken(GetInstForTokenRequest) returns (Institution) {}
+}
+
+service CategoryService {
+    rpc GetInstitutionCategories(GetInstitutionCategoriesRequest) returns (CategoryResponse) {}
+    rpc CreateCategory(InstitutionCategory) returns (InstitutionCategory) {}
+}
