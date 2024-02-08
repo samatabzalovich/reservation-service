@@ -9,6 +9,9 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type jsonResponse struct {
@@ -57,23 +60,41 @@ func (app *Config) writeJSON(w http.ResponseWriter, status int, data any, header
 
 	return nil
 }
+// Modified rpcErrorJson function to handle gRPC status codes
+func (app *Config) rpcErrorJson(w http.ResponseWriter, err error) error {
+    // Extract the gRPC status from the error
+    st, ok := status.FromError(err)
+    if !ok {
+        // This is not a gRPC error
+        return app.writeJSON(w, http.StatusInternalServerError, jsonResponse{
+            Error:   true,
+            Message: "An unexpected error occurred",
+        })
+    }
 
-// rpcErrorJson takes an error, and optionally a response status code, and generates and sends
-// a json error response
-func (app *Config) rpcErrorJson(w http.ResponseWriter, err error, status ...int) error {
-	statusCode := http.StatusBadRequest
+    // Map gRPC status codes to HTTP status codes
+    var statusCode int
+    switch st.Code() {
+    case codes.InvalidArgument:
+        statusCode = http.StatusBadRequest
+    case codes.NotFound:
+        statusCode = http.StatusNotFound
+    case codes.AlreadyExists:
+        statusCode = http.StatusConflict
+    case codes.PermissionDenied:
+        statusCode = http.StatusForbidden
+    case codes.Unauthenticated:
+        statusCode = http.StatusUnauthorized
+    default:
+        statusCode = http.StatusInternalServerError
+    }
 
-	if len(status) > 0 {
-		statusCode = status[0]
-	}
-	errorMsg := err.Error()
-	errorMsg = strings.Replace(errorMsg, "rpc error: code = Unknown desc = ", "", 1)
+    // Simplify the message by removing the gRPC error prefix if present
 
-	var payload jsonResponse
-	payload.Error = true
-	payload.Message = errorMsg
-
-	return app.writeJSON(w, statusCode, payload)
+    return app.writeJSON(w, statusCode, jsonResponse{
+        Error:   true,
+        Message: st.Message(),
+    })
 }
 func (app *Config) errorJson(w http.ResponseWriter, err error, status ...int) error {
 	statusCode := http.StatusBadRequest

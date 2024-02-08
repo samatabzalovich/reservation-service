@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"encoding/json"
 	"time"
+
+	"github.com/jackc/pgx"
 )
 
 type Employee struct {
@@ -138,6 +140,11 @@ func (m EmployeeModel) Insert(employee *Employee) error {
 	err = tx.QueryRowContext(ctx, query, args...).Scan(&employeeId)
 	if err != nil {
 		tx.Rollback()
+		if pgerr, ok := err.(pgx.PgError); ok {
+			if pgerr.Code == "23503" {
+				return ErrInvalidInstId
+			}
+		} 
 		return err
 	}
 	employee.ID = employeeId
@@ -158,7 +165,13 @@ func (m EmployeeModel) Insert(employee *Employee) error {
 		_, err = tx.ExecContext(ctx, query, args...)
 		if err != nil {
 			tx.Rollback()
-			return err
+			// foreign key error handle 
+				if pgerr, ok := err.(pgx.PgError); ok {
+					if pgerr.Code == "23503" {
+						return ErrRecordNotFound
+					}
+				} 
+				return err
 		}
 	}
 	return tx.Commit()
@@ -171,15 +184,15 @@ func (m EmployeeModel) GetAllForInst(instId int64) ([]*Employee, error) {
 	WHERE inst_id = $1`
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	rows, err := m.DB.QueryContext(ctx, query, instId)
+	employeeRows, err := m.DB.QueryContext(ctx, query, instId)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer employeeRows.Close()
 	var employees []*Employee
-	for rows.Next() {
+	for employeeRows.Next() {
 		var employee Employee
-		err := rows.Scan(
+		err := employeeRows.Scan(
 			&employee.ID,
 			&employee.CreatedAt,
 			&employee.InstId,
@@ -195,14 +208,14 @@ func (m EmployeeModel) GetAllForInst(instId int64) ([]*Employee, error) {
 		SELECT day_of_week, start_time, end_time, break_start_time, break_end_time
 		FROM employee_schedule
 		WHERE employee_id = $1`
-		rows, err := m.DB.QueryContext(ctx, query, employee.ID)
+		workHoursRows, err := m.DB.QueryContext(ctx, query, employee.ID)
 		if err != nil {
 			return nil, err
 		}
-		defer rows.Close()
-		for rows.Next() {
+		defer workHoursRows.Close()
+		for workHoursRows.Next() {
 			var schedule EmployeeSchedule
-			err := rows.Scan(
+			err := workHoursRows.Scan(
 				&schedule.DayOfWeek,
 				&schedule.StartTime,
 				&schedule.EndTime,
@@ -214,7 +227,7 @@ func (m EmployeeModel) GetAllForInst(instId int64) ([]*Employee, error) {
 			}
 			employee.Schedule = append(employee.Schedule, &schedule)
 		}
-		if err = rows.Err(); err != nil {
+		if err = workHoursRows.Err(); err != nil {
 			return nil, err
 		}
 		query = `
@@ -222,14 +235,14 @@ func (m EmployeeModel) GetAllForInst(instId int64) ([]*Employee, error) {
 		FROM employee_service e
 		JOIN service s on e.service_id = s.id
 		WHERE employee_id = $1`
-		rows, err = m.DB.QueryContext(ctx, query, employee.ID)
+		servicesRows, err:= m.DB.QueryContext(ctx, query, employee.ID)
 		if err != nil {
 			return nil, err
 		}
-		defer rows.Close()
-		for rows.Next() {
+		defer servicesRows.Close()
+		for servicesRows.Next() {
 			var service EmployeeServices
-			err := rows.Scan(
+			err := servicesRows.Scan(
 				&service.ServiceId,
 				&service.Name,
 			)
@@ -238,12 +251,12 @@ func (m EmployeeModel) GetAllForInst(instId int64) ([]*Employee, error) {
 			}
 			employee.Services = append(employee.Services, &service)
 		}
-		if err = rows.Err(); err != nil {
+		if err = servicesRows.Err(); err != nil {
 			return nil, err
 		}
 		employees = append(employees, &employee)
 	}
-	if err = rows.Err(); err != nil {
+	if err = employeeRows.Err(); err != nil {
 		return nil, err
 	}
 	return employees, nil
@@ -390,8 +403,14 @@ func (m EmployeeModel) UpdateServices(employee *Employee) error {
 		args := []any{employee.ID, service.ServiceId}
 		_, err = m.DB.ExecContext(ctx, query, args...)
 		if err != nil {
+			if pgerr, ok := err.(pgx.PgError); ok {
+				if pgerr.Code == "23503" {
+					return ErrRecordNotFound
+				}
+			} 
 			return err
 		}
 	}
 	return nil
 }
+

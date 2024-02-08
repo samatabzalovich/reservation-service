@@ -100,7 +100,7 @@ build_proto:
 ## Migration paths
 DSN := postgres://postgres:190704Samat@localhost/reserveHub?sslmode=disable
 DIR_MIGRATIONS := ../migrations
-NAME := add_institution_table_index
+NAME := insert_temp_services_for_inst
 
 migrate_up:
 	@echo "Migrating up..."

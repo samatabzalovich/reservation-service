@@ -5,6 +5,9 @@ import (
 	"errors"
 	data "institution-service/internal/data"
 	inst "institution-service/proto_files/institution_proto"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const (
@@ -15,7 +18,7 @@ const (
 func (instService *InstitutionService) CreateInstitution(ctx context.Context, req *inst.CreateInstitutionRequest) (*inst.CreateInstitutionResponse, error) {
 	workHours := instService.getWorkHoursForRequest(req.GetInstitution().WorkingHours)
 	if workHours == nil {
-		return &inst.CreateInstitutionResponse{Id: 0}, data.ErrInvalidWorkingHours
+		return &inst.CreateInstitutionResponse{Id: 0}, status.Error(codes.InvalidArgument, data.ErrInvalidWorkingHours.Error())
 	}
 
 	institution, err := data.NewInstitution(
@@ -34,11 +37,16 @@ func (instService *InstitutionService) CreateInstitution(ctx context.Context, re
 		workHours,
 	)
 	if err != nil {
-		return &inst.CreateInstitutionResponse{Id: 0}, err
+		return &inst.CreateInstitutionResponse{Id: 0}, status.Error(codes.InvalidArgument, err.Error())
 	}
 	id, err := instService.Models.Institutions.Insert(institution)
 	if err != nil {
-		return nil, err
+		switch  {
+		case errors.Is(err, data.ErrInvalidCategoryId):
+			return &inst.CreateInstitutionResponse{Id: 0}, status.Error(codes.InvalidArgument, err.Error())
+		default:
+				return &inst.CreateInstitutionResponse{Id: 0}, status.Error(codes.Internal, InvalidServerErr)
+		}
 	}
 	return &inst.CreateInstitutionResponse{Id: id}, nil
 }
@@ -46,7 +54,7 @@ func (instService *InstitutionService) CreateInstitution(ctx context.Context, re
 func (instService *InstitutionService) GetInstitution(ctx context.Context, req *inst.GetInstitutionsByIdRequest) (*inst.Institution, error) {
 	institution, err := instService.Models.Institutions.GetById(req.GetId())
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal, "failed to get institution")
 	}
 	workHours := instService.getWorkHoursForResponse(institution.WorkingHours)
 	return &inst.Institution{
@@ -69,7 +77,7 @@ func (instService *InstitutionService) GetInstitution(ctx context.Context, req *
 func (instService *InstitutionService) UpdateInstitution(ctx context.Context, req *inst.UpdateInstitutionRequest) (*inst.UpdateInstitutionResponse, error) {
 	workHours := instService.getWorkHoursForRequest(req.GetInstitution().WorkingHours)
 	if workHours == nil {
-		return &inst.UpdateInstitutionResponse{Id: 0}, data.ErrInvalidWorkingHours
+		return &inst.UpdateInstitutionResponse{Id: 0}, status.Error(codes.InvalidArgument, data.ErrInvalidWorkingHours.Error())
 	}
 	institution := &data.Institution{
 		ID:           req.GetInstitution().Id,
@@ -88,12 +96,19 @@ func (instService *InstitutionService) UpdateInstitution(ctx context.Context, re
 	}
 	version, err := instService.Models.Institutions.GetVersionByIdForOwner(institution.OwnerId, institution.ID)
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal, InvalidServerErr)
 	}
 	institution.Version = version
 	err = instService.Models.Institutions.Update(institution)
 	if err != nil {
-		return nil, err
+		switch  {
+		case errors.Is(err, data.ErrEditConflict):
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		case errors.Is(err, data.ErrInvalidCategoryId):
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		default:
+			return nil, status.Error(codes.Internal, InvalidServerErr)
+		}
 	}
 	return &inst.UpdateInstitutionResponse{Id: req.Institution.Id}, nil
 }
@@ -101,7 +116,7 @@ func (instService *InstitutionService) UpdateInstitution(ctx context.Context, re
 func (instService *InstitutionService) DeleteInstitution(ctx context.Context, req *inst.DeleteInstitutionRequest) (*inst.DeleteInstitutionResponse, error) {
 	err := instService.Models.Institutions.Delete(req.GetId())
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal, InvalidServerErr)
 	}
 	return &inst.DeleteInstitutionResponse{Id: req.GetId()}, nil
 }
@@ -110,12 +125,12 @@ func (instService *InstitutionService) SearchInstitutions(ctx context.Context, r
 	sortSafeList := []string{"id", "rating", "appointments", "employees", "-id", "-rating", "-appointments", "-employees"}
 	filter, err := data.NewFilters(int(req.GetPageNumber()), int(req.GetPageSize()), req.GetSort(), sortSafeList)
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	institutions, metadata, err := instService.Models.Institutions.Search(req.Categories, req.SearchText, filter)
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal, InvalidServerErr)
 	}
 	var institutionsResponse []*inst.Institution
 	for _, institution := range institutions {
@@ -149,12 +164,12 @@ func (instService *InstitutionService) SearchInstitutions(ctx context.Context, r
 func (instService *InstitutionService) GetForToken(ctx context.Context, req *inst.GetInstForTokenRequest) (*inst.Institution, error) {
 	token := req.GetToken()
 	if token == "" && len(token) != 26 {
-		return nil, errors.New("token is not valid")
+		return nil, status.Error(codes.InvalidArgument, "invalid token")
 	}
 
 	institution, err := instService.Models.Institutions.GetForToken(data.ScopeEmployeeReg, token)
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal, InvalidServerErr)
 	}
 	return &inst.Institution{
 		Id:          institution.ID,

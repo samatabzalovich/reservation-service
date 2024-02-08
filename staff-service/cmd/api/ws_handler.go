@@ -18,13 +18,13 @@ func (app *Config) JoinRegisterEmployeeRoom(w http.ResponseWriter, r *http.Reque
 	var req JoinRoomReq
 	id, err := app.readStringParam(r, "token")
 	if err != nil {
-		app.errorJson(w, err, http.StatusBadRequest)
+		app.errorJson(w, err, http.StatusForbidden)
 		return
 	}
 	req.RoomID = id
 	inst, err := app.GetInstitutionForToken(req.RoomID)
 	if err != nil {
-		app.errorJson(w, err, http.StatusBadRequest)
+		app.errorJson(w, err, http.StatusForbidden)
 		return
 	}
 

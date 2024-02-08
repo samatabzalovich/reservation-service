@@ -5,9 +5,12 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type jsonResponse struct {
@@ -51,6 +54,15 @@ func (app *Config) readStringParam(r *http.Request, key string) (string, error) 
 	return value, nil
 }
 
+func (app *Config) readIntParam(r *http.Request, key string) (int64, error) {
+	value := chi.URLParam(r, key)
+	if value == "" {
+		return 0, ErrBadRequest
+	}
+	//parse string to int64
+	return strconv.ParseInt(value, 10, 64)
+}
+
 
 func (app *Config) writeJSON(w http.ResponseWriter, status int, data any, headers ...http.Header) error {
 	out, err := json.Marshal(data)
@@ -88,18 +100,39 @@ func (app *Config) errorJson(w http.ResponseWriter, err error, status ...int) er
 }
 
 
-func (app *Config) rpcErrorJson(w http.ResponseWriter, err error, status ...int) error {
-	statusCode := http.StatusBadRequest
+func (app *Config) rpcErrorJson(w http.ResponseWriter, err error) error {
+    // Extract the gRPC status from the error
+    st, ok := status.FromError(err)
+    if !ok {
+        // This is not a gRPC error
+        return app.writeJSON(w, http.StatusInternalServerError, jsonResponse{
+            Error:   true,
+            Message: "An unexpected error occurred",
+        })
+    }
 
-	if len(status) > 0 {
-		statusCode = status[0]
-	}
-	errorMsg := err.Error()
-	errorMsg = strings.Replace(errorMsg, "rpc error: code = Unknown desc = ", "", 1)
+    // Map gRPC status codes to HTTP status codes
+    var statusCode int
+    switch st.Code() {
+    case codes.InvalidArgument:
+        statusCode = http.StatusBadRequest
+    case codes.NotFound:
+        statusCode = http.StatusNotFound
+    case codes.AlreadyExists:
+        statusCode = http.StatusConflict
+    case codes.PermissionDenied:
+        statusCode = http.StatusForbidden
+    case codes.Unauthenticated:
+        statusCode = http.StatusUnauthorized
+    default:
+        statusCode = http.StatusInternalServerError
+    }
 
-	var payload jsonResponse
-	payload.Error = true
-	payload.Message = errorMsg
+    // Simplify the message by removing the gRPC error prefix if present
+    errorMsg := strings.TrimPrefix(st.Message(), "rpc error: code = "+st.Code().String()+" desc = ")
 
-	return app.writeJSON(w, statusCode, payload)
+    return app.writeJSON(w, statusCode, jsonResponse{
+        Error:   true,
+        Message: errorMsg,
+    })
 }

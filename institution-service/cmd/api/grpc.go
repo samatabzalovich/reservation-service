@@ -5,6 +5,9 @@ import (
 	inst "institution-service/proto_files/institution_proto"
 )
 
+var (
+	InvalidServerErr = "invalid server error"
+)
 
 type InstitutionService struct {
 	inst.UnimplementedInstitutionServiceServer

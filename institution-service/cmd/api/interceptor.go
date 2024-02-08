@@ -2,11 +2,12 @@ package main
 
 import (
 	"context"
-	"errors"
 	"strings"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 func (app *Config) authUnaryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
@@ -20,21 +21,21 @@ func (app *Config) authUnaryInterceptor(ctx context.Context, req interface{}, in
 	if isInProtectedMethods(info.FullMethod, protectedMethods) {
 		md, ok := metadata.FromIncomingContext(ctx)
 		if !ok {
-			return nil, errors.New("metadata is not provided")
+			return nil, status.Error(codes.PermissionDenied, "metadata is not provided")
 		}
 
 		tokens, ok := md["authorization"]
 		if !ok || len(tokens) == 0 {
-			return nil, errors.New("authorization token is not provided")
+			return nil, status.Error(codes.PermissionDenied, "token is not provided")
 		}
 
 		token := tokens[0]
 		payload, err := app.GetUserForToken(token)
 		if err != nil || payload == nil {
-			return nil, errors.New("invalid token")
+			return nil, status.Error(codes.PermissionDenied, "invalid token")
 		}
 		if !payload.Activated {
-			return nil, errors.New("user is not activated")
+			return nil, status.Error(codes.PermissionDenied, "user is not activated")
 		}
 		// Add the user data to the context
 		ctx = *app.contextSetUser(ctx, payload)

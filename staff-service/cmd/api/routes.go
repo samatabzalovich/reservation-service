@@ -29,6 +29,8 @@ func (app *Config) routes() http.Handler {
 		r.Use(app.requireActivatedUser)
 		r.Post("/create", app.CreateEmployee)
 		r.Post("/qr-code", app.CreateQRCodeToken)
+		r.Get("/{instId}", app.GetAllForInstitution)
+
 		// r.Put("/update", app.)
 		// r.Delete("/delete", app.)
 		// r.Put("/update-services", app.)

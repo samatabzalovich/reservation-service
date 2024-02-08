@@ -10,6 +10,10 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+var (
+	InternalServerErr = "internal server error"
+)
+
 type AuthService struct {
 	auth.UnimplementedTokenServiceServer
 	auth.UnimplementedRegServiceServer

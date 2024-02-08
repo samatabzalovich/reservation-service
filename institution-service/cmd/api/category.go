@@ -4,6 +4,9 @@ import (
 	"context"
 	data "institution-service/internal/data"
 	inst "institution-service/proto_files/institution_proto"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 
@@ -14,7 +17,7 @@ func(categoryService *CategoryService) CreateCategory(ctx context.Context, req *
 	}
 	id, err := categoryService.Models.Categories.Insert(category)
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal, InvalidServerErr)
 	}
 	return &inst.InstitutionCategory{
 		Id: id,
@@ -26,7 +29,7 @@ func(categoryService *CategoryService) CreateCategory(ctx context.Context, req *
 func(categoryService *CategoryService) GetInstitutionCategories(ctx context.Context, req *inst.GetInstitutionCategoriesRequest) (*inst.CategoryResponse, error) {
 	categories, err := categoryService.Models.Categories.GetAll()
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal, InvalidServerErr)
 	}
 	var categoriesResponse []*inst.InstitutionCategory
 	for _, category := range categories {

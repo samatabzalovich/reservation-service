@@ -9,6 +9,7 @@ import (
 var (
 	ErrRecordNotFound = errors.New("record not found")
 	ErrEditConflict   = errors.New("edit conflict")
+	ErrUniqueViolation = errors.New("unique violation")
 )
 var db *sql.DB
 
@@ -30,7 +31,6 @@ type Models struct {
 	Users interface {
 		Insert(user *User) error
 		GetByNumber(number string) (*User, error)
-		GetByEmail(number string) (*User, error)
 		Update(user *User) error
 		GetForToken(tokenScope, tokenPlaintext string) (*User, error)
 		ActivateUser(number string) (int64, error)

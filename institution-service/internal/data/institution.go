@@ -9,6 +9,7 @@ import (
 	"institution-service/internal/validator"
 	"time"
 
+	"github.com/jackc/pgx"
 	"github.com/lib/pq"
 )
 
@@ -62,6 +63,9 @@ func NewInstitution(id int64, name string, description string, website string, o
 	}
 	if city < 1 {
 		return nil, ErrInvalidCity
+	}
+	if len(categories) == 0 {
+		return nil, ErrInvalidCategoryId
 	}
 	for _, id := range categories {
 		if id < 1 {
@@ -122,6 +126,7 @@ func (m InstitutionModel) Insert(institution *Institution) (int64, error) {
 	defer cancel()
 	args := []any{institution.Name, institution.Description, institution.Website, institution.OwnerId, institution.Latitude, institution.Longitude, institution.Country, institution.City, institution.Phone, institution.Address}
 	tx, err := m.DB.BeginTx(ctx, nil)
+	
 	if err != nil {
 		return 0, err
 	}
@@ -136,12 +141,20 @@ func (m InstitutionModel) Insert(institution *Institution) (int64, error) {
 		_, err = tx.ExecContext(ctx, query, id, categoryId)
 		if err != nil {
 			tx.Rollback()
+			if pgerr, ok := err.(pgx.PgError); ok {
+				if pgerr.Code == "23503" {
+					return 0, ErrInvalidCategoryId
+				}
+			}
 			return 0, err
 		}
 	}
+	
 	for _, workingHours := range institution.WorkingHours {
+		ho, mo, so := workingHours.OpenTime.Clock()
+		hc, mc, sc := workingHours.CloseTime.Clock()
 		query = `INSERT INTO institution_working_hours (institution_id, day_of_week, open_time, close_time) VALUES ($1, $2, $3, $4)`
-		_, err = tx.ExecContext(ctx, query, id, workingHours.DayOfWeek, workingHours.OpenTime, workingHours.CloseTime)
+		_, err = tx.ExecContext(ctx, query, id, workingHours.DayOfWeek, fmt.Sprintf("%d:%d:%d", ho,mo,so), fmt.Sprintf("%d:%d:%d", hc,mc,sc))
 		if err != nil {
 			tx.Rollback()
 			return 0, err
@@ -252,19 +265,26 @@ func (m InstitutionModel) Update(institution *Institution) error {
 		tx.Rollback()
 		return err
 	}
-
 	for _, categoryId := range institution.Categories {
 		query = `INSERT INTO institution_category (inst_id, category_id) VALUES ($1, $2)`
 		_, err = tx.ExecContext(ctx, query, institution.ID, categoryId)
 		if err != nil {
 			tx.Rollback()
+			if pgerr, ok := err.(pgx.PgError); ok {
+				if pgerr.Code == "23503" {
+					return ErrInvalidCategoryId
+				}
+			}
 			return err
 		}
 	}
 
+	
 	for _, workingHours := range institution.WorkingHours {
+		ho, mo, so := workingHours.OpenTime.Clock()
+		hc, mc, sc := workingHours.CloseTime.Clock()
 		query = `INSERT INTO institution_working_hours (institution_id, day_of_week, open_time, close_time) VALUES ($1, $2, $3, $4)`
-		_, err = tx.ExecContext(ctx, query, institution.ID, workingHours.DayOfWeek, workingHours.OpenTime, workingHours.CloseTime)
+		_, err = tx.ExecContext(ctx, query, institution.ID, workingHours.DayOfWeek, fmt.Sprintf("%d:%d:%d", ho,mo,so), fmt.Sprintf("%d:%d:%d", hc,mc,sc))
 		if err != nil {
 			tx.Rollback()
 			return err

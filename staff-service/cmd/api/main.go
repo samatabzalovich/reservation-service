@@ -8,8 +8,8 @@ import (
 
 	"github.com/gorilla/websocket"
 	_ "github.com/jackc/pgconn"
-	_ "github.com/jackc/pgx/v4"
-	_ "github.com/jackc/pgx/v4/stdlib"
+	_ "github.com/jackc/pgx"
+	_ "github.com/jackc/pgx/stdlib"
 )
 
 type Config struct {
