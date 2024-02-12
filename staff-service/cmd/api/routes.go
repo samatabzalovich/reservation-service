@@ -23,14 +23,11 @@ func (app *Config) routes() http.Handler {
 	mux.Use(middleware.Heartbeat("/ping"))
 
 	// mux.Get("/employee/{id}", app.GetEmployeeById)
-	// mux.Get("/institution-employees/{id}", app.GetEmployeesForInstitution)
 	mux.Route("/employee", func(r chi.Router) {
 		r.Use(app.requireAuthentication)
 		r.Use(app.requireActivatedUser)
 		r.Post("/create", app.CreateEmployee)
 		r.Post("/qr-code", app.CreateQRCodeToken)
-		r.Get("/{instId}", app.GetAllForInstitution)
-
 		// r.Put("/update", app.)
 		// r.Delete("/delete", app.)
 		// r.Put("/update-services", app.)
@@ -45,7 +42,8 @@ func (app *Config) routes() http.Handler {
 	})
 
 	//mux.Get("/service/{id}", app.GetServiceById)
-	//mux.Get("/institution-services/{id}", app.GetServicesForInstitution)
+	mux.Get("/institution-service/{id}", app.GetServiceForInstitution)
+	mux.Get("/institution-employee/{instId}", app.GetAllEmployeesForInstitution)
 	mux.Route("/service", func(r chi.Router) {
 		r.Use(app.requireAuthentication)
 		r.Use(app.requireActivatedUser)
@@ -53,6 +51,6 @@ func (app *Config) routes() http.Handler {
 		//r.Put("/update", app.)
 		//r.Delete("/delete/{id}", app.)
 	})
-	//mux.NotFound(app.NotFound)
+	mux.NotFound(app.NotFound)
 	return mux
 }

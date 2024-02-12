@@ -15,11 +15,3 @@ CREATE TABLE IF NOT EXISTS institution(
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- INSERT INTO institution (name, description, website, owner_id, latitude,
---                          longitude, address, phone, country, city, category_id)
--- VALUES ('Instituto de Computação',
---         'Instituto de Computação da Universidade Federal de Alagoas', 'https://www.ic.ufal.br/',
---         1, '-9.555067', '-35.779773',
---         'Av. Lourival Melo Mota, s/n - Cidade Universitária, ' ||
---         'Maceió - AL, 57072-900', '+77375452529',
---         'Brasil', 'Maceió', 3);

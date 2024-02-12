@@ -49,6 +49,18 @@ services:
     environment:
       DSN: "host=postgres port=5432 user=postgres password=190704Samat dbname=reserveHub sslmode=disable timezone=UTC connect_timeout=5"
 
+  appointment-service:
+    build:
+      context: ./../appointment-service
+      dockerfile: ./../appointment-service/appointments.dockerfile
+    restart: always
+    ports:
+      - "8083:80"
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      DSN: "host=postgres port=5432 user=postgres password=190704Samat dbname=reserveHub sslmode=disable timezone=UTC connect_timeout=5"
     
 
   postgres:

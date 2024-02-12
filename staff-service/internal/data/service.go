@@ -3,7 +3,11 @@ package data
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"strings"
 	"time"
+
+	"github.com/jackc/pgx"
 )
 
 type Service struct {
@@ -11,14 +15,14 @@ type Service struct {
 	InstId      int64     `json:"inst_id"`
 	Name        string    `json:"name"`
 	Description string    `json:"description"`
-	Price       float64   `json:"price"`
-	Duration    time.Time `json:"duration"`
+	Price       int   `json:"price"`
+	Duration    time.Duration `json:"duration"`
 	PhotoUrl    string    `json:"photo_url"`
 	CreatedAt   string    `json:"created_at"`
 	UpdatedAt   string    `json:"updated_at"`
 }
 
-func NewService(instId int64, name string, description string, price float64, duration time.Time, photoUrl string) (*Service, error) {
+func NewService(instId int64, name string, description string, price int, duration time.Duration, photoUrl string) (*Service, error) {
 	if instId < 1 {
 		return nil, ErrInvalidInstId
 	}
@@ -47,15 +51,22 @@ type ServiceModel struct {
 }
 
 func (m ServiceModel) Insert(service *Service) error {
+	intervalStr := fmt.Sprintf("%d hours %d minutes %d seconds",
+	int(service.Duration.Hours()), int(service.Duration.Minutes())%60, int(service.Duration.Seconds())%60)
 	query := `
 		INSERT INTO services (institution_id, name, description, price, duration, photo_url)
 		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id`
-	args := []interface{}{service.InstId, service.Name, service.Description, service.Price, service.Duration, service.PhotoUrl}
+	args := []interface{}{service.InstId, service.Name, service.Description, service.Price, intervalStr, service.PhotoUrl}
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	err := m.DB.QueryRowContext(ctx, query, args...).Scan(&service.ID)
 	if err != nil {
+		if pgerr, ok := err.(pgx.PgError); ok {
+			if pgerr.Code == "23503" {
+				return ErrInvalidInstId
+			}
+		}
 		return err
 	}
 	return nil
@@ -63,9 +74,9 @@ func (m ServiceModel) Insert(service *Service) error {
 
 func (m ServiceModel) GetAllForInst(instId int64) ([]*Service, error) {
 	query := `
-		SELECT id, inst_id, name, description, price, duration, photo_url, created_at, updated_at
+		SELECT id, institution_id, name, description, price, duration, photo_url, created_at, updated_at
 		FROM services
-		WHERE inst_id = $1`
+		WHERE institution_id = $1`
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	rows, err := m.DB.QueryContext(ctx, query, instId)
@@ -75,6 +86,7 @@ func (m ServiceModel) GetAllForInst(instId int64) ([]*Service, error) {
 	defer rows.Close()
 	var services []*Service
 	for rows.Next() {
+		var durationStr string
 		var service Service
 		err := rows.Scan(
 			&service.ID,
@@ -82,7 +94,7 @@ func (m ServiceModel) GetAllForInst(instId int64) ([]*Service, error) {
 			&service.Name,
 			&service.Description,
 			&service.Price,
-			&service.Duration,
+			&durationStr,
 			&service.PhotoUrl,
 			&service.CreatedAt,
 			&service.UpdatedAt,
@@ -90,6 +102,14 @@ func (m ServiceModel) GetAllForInst(instId int64) ([]*Service, error) {
 		if err != nil {
 			return nil, err
 		}
+		// duration 05:00:00 TO 5h0m0s
+		durationStr = strings.Replace(durationStr, ":", "h", 1)
+		durationStr = strings.Replace(durationStr, ":", "m", 1)
+		parsedDuration, err := time.ParseDuration(durationStr + "s")
+if err != nil {
+    return nil, err
+}
+service.Duration = parsedDuration
 		services = append(services, &service)
 	}
 	if err = rows.Err(); err != nil {
@@ -100,7 +120,7 @@ func (m ServiceModel) GetAllForInst(instId int64) ([]*Service, error) {
 
 func (m ServiceModel) GetById(id int64) (*Service, error) {
 	query := `
-		SELECT id, inst_id, name, description, price, duration, photo_url, created_at, updated_at
+		SELECT id, institution_id, name, description, price, duration, photo_url, created_at, updated_at
 		FROM services
 		WHERE id = $1`
 	var service Service
@@ -132,7 +152,7 @@ func (m ServiceModel) Update(service *Service) error {
 	query := `
 		UPDATE services
 		SET name = $1, description = $2, price = $3, duration = $4, photo_url = $5, updated_at = CURRENT_TIMESTAMP
-		WHERE id = $6 AND inst_id = $7`
+		WHERE id = $6 AND institution_id = $7`
 	args := []interface{}{
 		service.Name,
 		service.Description,

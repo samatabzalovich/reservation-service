@@ -145,6 +145,34 @@ func (app *Config) GetInstitutionViaGRpc(w http.ResponseWriter, requestPayload R
 		})
 }
 
+func (app *Config) GetInstitutionsForOwnerViaGrpc(w http.ResponseWriter, requestPayload RequestPayload) {
+	conn, err := grpc.Dial("institution-service:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	if err != nil {
+		app.rpcErrorJson(w, err)
+		return
+	}
+	defer conn.Close()
+
+	c := inst.NewInstitutionServiceClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	res, err := c.GetInstitutionsForOwner(ctx, &inst.GetInstitutionsByIdRequest{
+		Id: requestPayload.Institution.OwnerId,
+	})
+	if err != nil {
+		app.rpcErrorJson(w, err)
+		return
+	}
+
+	app.writeJSON(w, http.StatusAccepted,
+		map[string]any{
+			"institutions": res.Institution,
+			"metadata":     res.Metadata,
+			"error":        false,
+		})
+}
+
 func (app *Config) SearchInstitutionsViaGRpc(w http.ResponseWriter, filterPayload FilterPayload) {
 	conn, err := grpc.Dial("institution-service:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
@@ -175,4 +203,3 @@ func (app *Config) SearchInstitutionsViaGRpc(w http.ResponseWriter, filterPayloa
 			"error":        false,
 		})
 }
-

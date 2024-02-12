@@ -3,6 +3,7 @@ BROKER_BINARY=brokerApp
 AUTH_BINARY=authApp
 INSTITUTION_BINARY=instApp
 STAFF_BINARY=staffApp
+APPOINTMENT_BINARY=appointmentApp
 
 ## up: starts all containers in the background without forcing build
 up:
@@ -11,7 +12,7 @@ up:
 	@echo "Docker images started!"
 #build_logger build_mail build_listener build_product
 ## up_build: stops docker-compose (if running), builds all projects and starts docker compose
-up_build: build_broker build_auth build_inst build_staff
+up_build: build_broker build_auth build_inst build_staff build_appointment
 	@echo "Stopping docker images (if running...)"
 	docker-compose down
 	@echo "Building (when required) and starting docker images..."
@@ -47,6 +48,11 @@ build_staff:
 	cd ../staff-service && env GOOS=linux CGO_ENABLED=0 go build -o ${STAFF_BINARY} ./cmd/api
 	@echo "Done!"
 
+build_appointment:
+	@echo "Building appointment binary..."
+	cd ../appointment-service && env GOOS=linux CGO_ENABLED=0 go build -o ${APPOINTMENT_BINARY} ./cmd/api
+	@echo "Done!"
+
 AUTH_PROTO_DIR := ../authentication-service/auth_proto
 AUTH_PROTO_FILE := $(AUTH_PROTO_DIR)/auth.proto
 AUTH_OUT_DIR := $(AUTH_PROTO_DIR)
@@ -79,6 +85,10 @@ INSTITUTION_PROTO_DIR := ../institution-service/proto_files/institution_proto
 INSTITUTION_PROTO_FILE := $(INSTITUTION_PROTO_DIR)/inst.proto
 INSTITUTION_OUT_DIR := $(INSTITUTION_PROTO_DIR)
 
+APPOINTMENT_AUTH_PROTO_DIR := ../appointment-service/proto_files/auth_proto
+APPOINTMENT_AUTH_PROTO_FILE := $(APPOINTMENT_AUTH_PROTO_DIR)/auth.proto
+APPOINTMENT_AUTH_OUT_DIR := $(APPOINTMENT_AUTH_PROTO_DIR)
+
 
 
 ## build_proto: builds the proto_files files
@@ -94,6 +104,7 @@ build_proto:
 	protoc --go_out=${EMPLOYEE_OUT_DIR} --go_opt=paths=source_relative --go-grpc_out=${EMPLOYEE_OUT_DIR} --go-grpc_opt=paths=source_relative --proto_path=${EMPLOYEE_PROTO_DIR} ${EMPLOYEE_PROTO_FILE}
 	protoc --go_out=${EMPLOYEE_AUTH_OUT_DIR} --go_opt=paths=source_relative --go-grpc_out=${EMPLOYEE_AUTH_OUT_DIR} --go-grpc_opt=paths=source_relative --proto_path=${EMPLOYEE_AUTH_PROTO_DIR} ${EMPLOYEE_AUTH_PROTO_FILE}
 	protoc --go_out=${EMPLOYEE_INST_OUT_DIR} --go_opt=paths=source_relative --go-grpc_out=${EMPLOYEE_INST_OUT_DIR} --go-grpc_opt=paths=source_relative --proto_path=${EMPLOYEE_INST_PROTO_DIR} ${EMPLOYEE_INST_PROTO_FILE}
+	protoc --go_out=${APPOINTMENT_AUTH_OUT_DIR} --go_opt=paths=source_relative --go-grpc_out=${APPOINTMENT_AUTH_OUT_DIR} --go-grpc_opt=paths=source_relative --proto_path=${APPOINTMENT_AUTH_PROTO_DIR} ${APPOINTMENT_AUTH_PROTO_FILE}
 	@echo "Done!"
 
 

@@ -106,9 +106,9 @@ func (authServer *AuthService) Register(ctx context.Context, req *auth.RegReques
 	if err != nil {
 		switch {
 		case errors.Is(err, data2.ErrDuplicateNumber):
-			v.AddError("email", "a user with this email address already exists")
-			res := &auth.RegResponse{Result: "failed validation: email already exists"}
-			return res, status.Error(codes.AlreadyExists, "email already exists")
+			v.AddError("number", "a user with this phone number already exists")
+			res := &auth.RegResponse{Result: "failed validation: a user with this phone number already exists"}
+			return res, status.Error(codes.AlreadyExists, "a user with this phone number already exists")
 		default:
 			res := &auth.RegResponse{Result: InternalServerErr}
 			return res, status.Error(codes.Internal, InternalServerErr)

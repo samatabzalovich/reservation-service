@@ -1,8 +1,9 @@
 go 1.21.1
 
 use (
+	./appointment-service
 	./authentication-service
 	./broker-service
-	./staff-service
 	./institution-service
+	./staff-service
 )

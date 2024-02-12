@@ -126,7 +126,7 @@ func (m InstitutionModel) Insert(institution *Institution) (int64, error) {
 	defer cancel()
 	args := []any{institution.Name, institution.Description, institution.Website, institution.OwnerId, institution.Latitude, institution.Longitude, institution.Country, institution.City, institution.Phone, institution.Address}
 	tx, err := m.DB.BeginTx(ctx, nil)
-	
+
 	if err != nil {
 		return 0, err
 	}
@@ -149,12 +149,12 @@ func (m InstitutionModel) Insert(institution *Institution) (int64, error) {
 			return 0, err
 		}
 	}
-	
+
 	for _, workingHours := range institution.WorkingHours {
 		ho, mo, so := workingHours.OpenTime.Clock()
 		hc, mc, sc := workingHours.CloseTime.Clock()
 		query = `INSERT INTO institution_working_hours (institution_id, day_of_week, open_time, close_time) VALUES ($1, $2, $3, $4)`
-		_, err = tx.ExecContext(ctx, query, id, workingHours.DayOfWeek, fmt.Sprintf("%d:%d:%d", ho,mo,so), fmt.Sprintf("%d:%d:%d", hc,mc,sc))
+		_, err = tx.ExecContext(ctx, query, id, workingHours.DayOfWeek, fmt.Sprintf("%d:%d:%d", ho, mo, so), fmt.Sprintf("%d:%d:%d", hc, mc, sc))
 		if err != nil {
 			tx.Rollback()
 			return 0, err
@@ -279,12 +279,11 @@ func (m InstitutionModel) Update(institution *Institution) error {
 		}
 	}
 
-	
 	for _, workingHours := range institution.WorkingHours {
 		ho, mo, so := workingHours.OpenTime.Clock()
 		hc, mc, sc := workingHours.CloseTime.Clock()
 		query = `INSERT INTO institution_working_hours (institution_id, day_of_week, open_time, close_time) VALUES ($1, $2, $3, $4)`
-		_, err = tx.ExecContext(ctx, query, institution.ID, workingHours.DayOfWeek, fmt.Sprintf("%d:%d:%d", ho,mo,so), fmt.Sprintf("%d:%d:%d", hc,mc,sc))
+		_, err = tx.ExecContext(ctx, query, institution.ID, workingHours.DayOfWeek, fmt.Sprintf("%d:%d:%d", ho, mo, so), fmt.Sprintf("%d:%d:%d", hc, mc, sc))
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -386,4 +385,76 @@ func (m InstitutionModel) GetForToken(tokenScope, tokenPlaintext string) (*Insti
 		return nil, err
 	}
 	return &institution, nil
+}
+
+func (m InstitutionModel) GetForOwner(instId int64) ([]*Institution, Metadata, error) {
+	query := `SELECT i.id, 
+       i.name, i.description, 
+       i.website, i.owner_id, 
+       i.latitude, i.longitude, 
+       i.address, i.phone, i.country,
+       i.city, array_agg(ic.category_id) AS categories
+FROM institution i
+JOIN institution_category ic ON i.id = ic.inst_id
+WHERE i.owner_id = $1
+GROUP BY i.id`
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	rows, err := m.DB.QueryContext(ctx, query, instId)
+	if err != nil {
+		return nil, Metadata{}, err
+	}
+	defer rows.Close()
+	var institutions []*Institution
+	for rows.Next() {
+		var institution Institution
+		var allCategories []int64
+		err = rows.Scan(&institution.ID, &institution.Name, &institution.Description, &institution.Website, &institution.OwnerId, &institution.Latitude, &institution.Longitude, &institution.Address, &institution.Phone, &institution.Country, &institution.City, pq.Array(&allCategories))
+		if err != nil {
+			return nil, Metadata{}, err
+		}
+		institution.Categories = allCategories
+		institutions = append(institutions, &institution)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, Metadata{}, err
+	}
+
+	query = `SELECT day_of_week, open_time, close_time FROM institution_working_hours WHERE institution_id = $1`
+	rows, err = m.DB.QueryContext(ctx, query, instId)
+	if err != nil {
+		return nil, Metadata{}, err
+	}
+	for _, institution := range institutions {
+		workingHoursRecords, err := m.DB.QueryContext(ctx, query, institution.ID)
+		if err != nil {
+			return nil, Metadata{}, err
+		}
+		for workingHoursRecords.Next() {
+			var openTime string
+			var closeTime string
+			var workingHours WorkingHours
+			err = workingHoursRecords.Scan(&workingHours.DayOfWeek, &openTime, &closeTime)
+			if err != nil {
+				return nil, Metadata{}, err
+			}
+			workingHours.OpenTime, err = time.Parse(TimeParse, openTime)
+			if err != nil {
+				return nil, Metadata{}, ErrInvalidOpen
+			}
+			workingHours.CloseTime, err = time.Parse(TimeParse, closeTime)
+			if err != nil {
+				return nil, Metadata{}, ErrInvalidClose
+			}
+			institution.WorkingHours = append(institution.WorkingHours, &workingHours)
+		}
+		if err = workingHoursRecords.Err(); err != nil {
+			return nil, Metadata{}, err
+		}
+	}
+	if err = rows.Err(); err != nil {
+		return nil, Metadata{}, err
+	}
+	metadata := calculateMetadata(len(institutions), 1, len(institutions))
+	return institutions, metadata, nil
 }

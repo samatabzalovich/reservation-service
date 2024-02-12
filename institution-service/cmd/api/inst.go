@@ -41,11 +41,11 @@ func (instService *InstitutionService) CreateInstitution(ctx context.Context, re
 	}
 	id, err := instService.Models.Institutions.Insert(institution)
 	if err != nil {
-		switch  {
+		switch {
 		case errors.Is(err, data.ErrInvalidCategoryId):
 			return &inst.CreateInstitutionResponse{Id: 0}, status.Error(codes.InvalidArgument, err.Error())
 		default:
-				return &inst.CreateInstitutionResponse{Id: 0}, status.Error(codes.Internal, InvalidServerErr)
+			return &inst.CreateInstitutionResponse{Id: 0}, status.Error(codes.Internal, InvalidServerErr)
 		}
 	}
 	return &inst.CreateInstitutionResponse{Id: id}, nil
@@ -101,7 +101,7 @@ func (instService *InstitutionService) UpdateInstitution(ctx context.Context, re
 	institution.Version = version
 	err = instService.Models.Institutions.Update(institution)
 	if err != nil {
-		switch  {
+		switch {
 		case errors.Is(err, data.ErrEditConflict):
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		case errors.Is(err, data.ErrInvalidCategoryId):
@@ -184,4 +184,39 @@ func (instService *InstitutionService) GetForToken(ctx context.Context, req *ins
 		Country:     institution.Country,
 		City:        institution.City,
 	}, nil
+}
+
+func (instService *InstitutionService) GetInstitutionsForOwner(ctx context.Context, req *inst.GetInstitutionsByIdRequest) (*inst.InstitutionsResponse, error) {
+	institutions, metadata, err := instService.Models.Institutions.GetForOwner(req.GetId())
+	if err != nil {
+		return nil, status.Error(codes.Internal, InvalidServerErr)
+	}
+	var institutionsResponse []*inst.Institution
+	for _, institution := range institutions {
+		workHoursResponse := instService.getWorkHoursForResponse(institution.WorkingHours)
+		institutionsResponse = append(institutionsResponse, &inst.Institution{
+			Id:           institution.ID,
+			Name:         institution.Name,
+			Description:  institution.Description,
+			Website:      institution.Website,
+			OwnerId:      institution.OwnerId,
+			Latitude:     institution.Latitude,
+			Longitude:    institution.Longitude,
+			Address:      institution.Address,
+			Phone:        institution.Phone,
+			Country:      institution.Country,
+			City:         institution.City,
+			Categories:   institution.Categories,
+			WorkingHours: workHoursResponse,
+		})
+	}
+	metadataRes := &inst.Metadata{
+		TotalRecords: int32(metadata.TotalRecords),
+		CurrentPage:  int32(metadata.CurrentPage),
+
+		PageSize:  int32(metadata.PageSize),
+		FirstPage: int32(metadata.FirstPage),
+		LastPage:  int32(metadata.LastPage),
+	}
+	return &inst.InstitutionsResponse{Institution: institutionsResponse, Metadata: metadataRes}, nil
 }

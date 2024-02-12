@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"io"
+	"log"
 	"net/http"
 	"staff-service/internal/data"
 )
@@ -19,15 +20,16 @@ func (app *Config) CreateEmployee(w http.ResponseWriter, r *http.Request) {
 		app.errorJson(w, err, http.StatusBadRequest)
 		return
 	}
-
 	err = app.Models.Employees.Insert(&input)
 	if err != nil {
+		log.Println("Error inserting employee: ")
 		switch err {
 		case data.ErrInvalidServices:
 			app.errorJson(w, err, http.StatusBadRequest)
 		default:
 			app.errorJson(w, err, http.StatusInternalServerError)
 		}
+		return
 	}
 
 	app.writeJSON(w, http.StatusCreated, map[string]any{"message": "employee created", "id": input.ID})
@@ -57,7 +59,7 @@ func (app *Config) CreateQRCodeToken(w http.ResponseWriter, r *http.Request) {
 	app.writeJSON(w, http.StatusCreated, map[string]string{"qr_token": token})
 }
 
-func (app *Config) GetAllForInstitution(w http.ResponseWriter, r *http.Request) {
+func (app *Config) GetAllEmployeesForInstitution(w http.ResponseWriter, r *http.Request) {
 	instId,err := app.readIntParam(r, "instId")
 	if err != nil {
 		app.errorJson(w, err, http.StatusBadRequest)
@@ -68,7 +70,7 @@ func (app *Config) GetAllForInstitution(w http.ResponseWriter, r *http.Request) 
 		app.errorJson(w, err, http.StatusInternalServerError)
 		return
 	}
-	app.writeJSON(w, http.StatusOK, employees)
+	app.writeJSON(w, http.StatusOK, map[string]any{"employees": employees})
 }
 
 

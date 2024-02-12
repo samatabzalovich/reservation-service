@@ -4,11 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/jackc/pgx"
 )
-
+var (
+	TimeParse        = "15:04:00"
+)
 type Employee struct {
 	ID          int64               `json:"id"`
 	CreatedAt   time.Time           `json:"created_at"`
@@ -43,24 +46,44 @@ type employeeScheduleAux struct {
 	BreakEndTime   string `json:"break_end_time"`
 }
 
+func (es *EmployeeSchedule) ParseToTimeStruct(dayOfWeek int, startTime string, endTime string, breakStartTime string, breakEndTime string) error {
+	var err error
+	es.StartTime, err = time.Parse(TimeParse, startTime)
+			if err != nil {
+				return err
+			}
+			es.EndTime, err = time.Parse(TimeParse, endTime)
+			if err != nil {
+				return err
+			}
+			es.BreakStartTime, err = time.Parse(TimeParse, breakStartTime)
+			if err != nil {
+				return  err
+			}
+			es.BreakEndTime, err = time.Parse(TimeParse, breakEndTime)
+			if err != nil {
+				return err
+			}
+			es.DayOfWeek = dayOfWeek
+			return nil
+}
+
 func (es *EmployeeSchedule) UnmarshalJSON(data []byte) error {
 	var aux employeeScheduleAux
-	if err := json.Unmarshal(data, &aux); err != nil {
+	err := json.Unmarshal(data, &aux);
+	if  err != nil {
 		return err
 	}
-
-	var err error
-	layout := "15:04:05"
-	if es.StartTime, err = time.Parse(layout, aux.StartTime); err != nil {
+	if es.StartTime, err = time.Parse(TimeParse, aux.StartTime); err != nil {
 		return err
 	}
-	if es.EndTime, err = time.Parse(layout, aux.EndTime); err != nil {
+	if es.EndTime, err = time.Parse(TimeParse, aux.EndTime); err != nil {
 		return err
 	}
-	if es.BreakStartTime, err = time.Parse(layout, aux.BreakStartTime); err != nil {
+	if es.BreakStartTime, err = time.Parse(TimeParse, aux.BreakStartTime); err != nil {
 		return err
 	}
-	if es.BreakEndTime, err = time.Parse(layout, aux.BreakEndTime); err != nil {
+	if es.BreakEndTime, err = time.Parse(TimeParse, aux.BreakEndTime); err != nil {
 		return err
 	}
 
@@ -144,14 +167,18 @@ func (m EmployeeModel) Insert(employee *Employee) error {
 			if pgerr.Code == "23503" {
 				return ErrInvalidInstId
 			}
-		} 
+		}
 		return err
 	}
 	employee.ID = employeeId
 	for _, schedule := range employee.Schedule {
+		hs, ms, ss := schedule.StartTime.Clock()
+		he, me, se := schedule.EndTime.Clock()
+		hbs, mbs, sbs := schedule.BreakStartTime.Clock()
+		hbe, mbe, sbe := schedule.BreakEndTime.Clock()
 		query = `
 		INSERT INTO employee_schedule (employee_id, day_of_week, start_time, end_time, break_start_time, break_end_time) VALUES ($1, $2, $3, $4, $5, $6)`
-		args = []any{employeeId, schedule.DayOfWeek, schedule.StartTime, schedule.EndTime, schedule.BreakStartTime, schedule.BreakEndTime}
+		args = []any{employeeId, schedule.DayOfWeek, fmt.Sprintf("%d:%d:%d", hs, ms, ss ), fmt.Sprintf("%d:%d:%d",he, me, se), fmt.Sprintf("%d:%d:%d", hbs, mbs, sbs), fmt.Sprintf("%d:%d:%d", hbe, mbe, sbe)}
 		_, err = tx.ExecContext(ctx, query, args...)
 		if err != nil {
 			tx.Rollback()
@@ -165,13 +192,13 @@ func (m EmployeeModel) Insert(employee *Employee) error {
 		_, err = tx.ExecContext(ctx, query, args...)
 		if err != nil {
 			tx.Rollback()
-			// foreign key error handle 
-				if pgerr, ok := err.(pgx.PgError); ok {
-					if pgerr.Code == "23503" {
-						return ErrRecordNotFound
-					}
-				} 
-				return err
+			// foreign key error handle
+			if pgerr, ok := err.(pgx.PgError); ok {
+				if pgerr.Code == "23503" {
+					return ErrInvalidServices
+				}
+			}
+			return err
 		}
 	}
 	return tx.Commit()
@@ -215,13 +242,19 @@ func (m EmployeeModel) GetAllForInst(instId int64) ([]*Employee, error) {
 		defer workHoursRows.Close()
 		for workHoursRows.Next() {
 			var schedule EmployeeSchedule
+			var startTime, endTime, breakStartTime, breakEndTime string
+			var dayOfWeek int
 			err := workHoursRows.Scan(
-				&schedule.DayOfWeek,
-				&schedule.StartTime,
-				&schedule.EndTime,
-				&schedule.BreakStartTime,
-				&schedule.BreakEndTime,
+				&dayOfWeek,
+				&startTime,
+				&endTime,
+				&breakStartTime,
+				&breakEndTime,
 			)
+			if err != nil {
+				return nil, err
+			}
+			err = schedule.ParseToTimeStruct(dayOfWeek, startTime, endTime, breakStartTime, breakEndTime)
 			if err != nil {
 				return nil, err
 			}
@@ -233,9 +266,9 @@ func (m EmployeeModel) GetAllForInst(instId int64) ([]*Employee, error) {
 		query = `
 		SELECT e.service_id, s.name
 		FROM employee_service e
-		JOIN service s on e.service_id = s.id
+		JOIN services s on e.service_id = s.id
 		WHERE employee_id = $1`
-		servicesRows, err:= m.DB.QueryContext(ctx, query, employee.ID)
+		servicesRows, err := m.DB.QueryContext(ctx, query, employee.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -407,10 +440,97 @@ func (m EmployeeModel) UpdateServices(employee *Employee) error {
 				if pgerr.Code == "23503" {
 					return ErrRecordNotFound
 				}
-			} 
+			}
 			return err
 		}
 	}
 	return nil
 }
 
+func (m EmployeeModel) GetEmployeesForInstitution(instId int64) ([]*Employee, error) {
+	query := `
+	SELECT id, created_at, inst_id, user_id, description, name, photo_url
+	FROM employee
+	WHERE inst_id = $1`
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	rows, err := m.DB.QueryContext(ctx, query, instId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var employees []*Employee
+	for rows.Next() {
+		var employee Employee
+		err := rows.Scan(
+			&employee.ID,
+			&employee.CreatedAt,
+			&employee.InstId,
+			&employee.UserId,
+			&employee.Description,
+			&employee.Name,
+			&employee.PhotoUrl,
+		)
+		if err != nil {
+			return nil, err
+		}
+		employees = append(employees, &employee)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	query = `SELECT day_of_week, start_time, end_time, break_start_time, break_end_time
+    	FROM employee_schedule
+		WHERE employee_id = $1`
+	for _, employee := range employees {
+		rows, err := m.DB.QueryContext(ctx, query, employee.ID)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var schedule EmployeeSchedule
+			err := rows.Scan(
+				&schedule.DayOfWeek,
+				&schedule.StartTime,
+				&schedule.EndTime,
+				&schedule.BreakStartTime,
+				&schedule.BreakEndTime,
+			)
+			if err != nil {
+				return nil, err
+			}
+			employee.Schedule = append(employee.Schedule, &schedule)
+		}
+		if err = rows.Err(); err != nil {
+			return nil, err
+		}
+	}
+	query = `SELECT e.service_id, s.name
+    	FROM employee_service e
+    			JOIN services s on e.service_id = s.id
+    					WHERE employee_id = $1`
+	for _, employee := range employees {
+		rows, err := m.DB.QueryContext(ctx, query, employee.ID)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var service EmployeeServices
+			err := rows.Scan(
+				&service.ServiceId,
+				&service.Name,
+			)
+			if err != nil {
+				return nil, err
+			}
+			employee.Services = append(employee.Services, &service)
+		}
+		if err = rows.Err(); err != nil {
+			return nil, err
+		}
+	}
+	return employees, nil
+}

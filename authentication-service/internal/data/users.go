@@ -25,10 +25,7 @@ type User struct {
 	Version   int       `json:"-"`
 }
 
-func ValidateEmail(v *validator.Validator, email string) {
-	v.Check(email != "", "email", "must be provided")
-	v.Check(validator.Matches(email, validator.EmailRX), "email", "must be a valid email address")
-}
+
 func ValidateNumber(v *validator.Validator, number string) {
 	v.Check(number != "", "number", "must be provided")
 	v.Check(validator.Matches(number, validator.PhoneRX), "number", "must be a valid phone number")
