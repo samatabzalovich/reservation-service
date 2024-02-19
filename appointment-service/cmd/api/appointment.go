@@ -3,7 +3,6 @@ package main
 import (
 	"appointment-service/internal/data"
 	"net/http"
-	"time"
 )
 
 func (app *Config) GetAppointmentById(w http.ResponseWriter, r *http.Request) {
@@ -35,6 +34,8 @@ func (app *Config) GetAppointmentsForInstitution(w http.ResponseWriter, r *http.
 		return
 	}
 
+	
+
 	app.writeJSON(w, http.StatusOK, map[string]any{"appointments": appointments})
 }
 
@@ -44,8 +45,8 @@ func (app *Config) CreateAppointment(w http.ResponseWriter, r *http.Request) {
 	InstId      int       `json:"inst_id"`
 	EmployeeID  int       `json:"employee_id"`
 	ServiceID   int       `json:"service_id"`
-	StartTime   time.Time `json:"start_time"`
-	EndTime     time.Time `json:"end_time"`
+	StartTime   data.DateTime `json:"start_time"`
+	EndTime     data.DateTime `json:"end_time"`
 	}
 	err := app.readJSON(w, r, &input)
 	if err != nil {

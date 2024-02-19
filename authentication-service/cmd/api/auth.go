@@ -30,7 +30,7 @@ func (authServer *AuthService) CreateAuthenticationToken(ctx context.Context, re
 	}
 	exist, err := authServer.Models.Users.GetByNumber(user.Number)
 	if err != nil {
-		
+
 		if errors.Is(err, data2.ErrRecordNotFound) {
 			res := &auth.TokenResponse{Result: "phone number or password is incorrect!"}
 			return res, status.Error(codes.InvalidArgument, "phone number or password is incorrect!")
@@ -42,7 +42,6 @@ func (authServer *AuthService) CreateAuthenticationToken(ctx context.Context, re
 	match, err := exist.Password.Matches(input.Password)
 	if err != nil {
 		res := &auth.TokenResponse{Result: "server error!"}
-		
 
 		return res, status.Error(codes.Internal, InternalServerErr)
 	}
@@ -54,11 +53,10 @@ func (authServer *AuthService) CreateAuthenticationToken(ctx context.Context, re
 	token, err := authServer.Models.Tokens.New(exist.ID, 24*time.Hour, data2.ScopeAuthentication, 0)
 	if err != nil {
 		res := &auth.TokenResponse{Result: InternalServerErr}
-		
 
 		return res, status.Error(codes.Internal, InternalServerErr)
 	}
-	
+
 	// return response
 	res := &auth.TokenResponse{Result: token.Plaintext, User: &auth.User{
 		UserName:  exist.UserName,

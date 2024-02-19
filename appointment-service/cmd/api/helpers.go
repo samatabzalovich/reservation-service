@@ -13,6 +13,8 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+
+
 type jsonResponse struct {
 	Error   bool   `json:"error"`
 	Message string `json:"message"`
@@ -45,14 +47,14 @@ func (app *Config) readJSON(w http.ResponseWriter, r *http.Request, data any) er
 }
 
 
-func (app *Config) readStringParam(r *http.Request, key string) (string, error) {
-	value := chi.URLParam(r, key)
-	if value == "" {
-		return "", ErrBadRequest
-	}
+// func (app *Config) readStringParam(r *http.Request, key string) (string, error) {
+// 	value := chi.URLParam(r, key)
+// 	if value == "" {
+// 		return "", ErrBadRequest
+// 	}
 
-	return value, nil
-}
+// 	return value, nil
+// }
 
 func (app *Config) readIntParam(r *http.Request, key string) (int64, error) {
 	value := chi.URLParam(r, key)
