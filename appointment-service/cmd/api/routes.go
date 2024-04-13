@@ -21,7 +21,9 @@ func (app *Config) routes() http.Handler {
 		MaxAge:           300,
 	}))
 	mux.Use(middleware.Heartbeat("/ping"))
+	mux.Get("/available-time-slots/{employee_id}", app.GetAvailableTimeSlots)
 	mux.Route("/appointment", func(r chi.Router) {
+		
 		r.Use(app.requireAuthentication)
 		r.Use(app.requireActivatedUser)
 		r.Get("/{id}", app.GetAppointmentById)

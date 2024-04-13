@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"net/http"
 	"staff-service/internal/data"
 	"time"
@@ -67,4 +68,23 @@ func (app *Config) GetServiceForInstitution(w http.ResponseWriter, r *http.Reque
 	}
 
 	app.writeJSON(w, http.StatusOK, services)
+}
+
+func (app *Config) GetService(w http.ResponseWriter, r *http.Request) {
+	serviceId, err := app.readIntParam(r, "id")
+	if err != nil {
+		app.errorJson(w, err, http.StatusBadRequest)
+		return
+	}
+
+	service, err := app.Models.Service.GetById(serviceId)
+	if err != nil {
+		if errors.Is(err, data.ErrRecordNotFound) {
+			app.errorJson(w, err, http.StatusNotFound)
+			return
+		}
+		app.errorJson(w, err, http.StatusInternalServerError)
+	}
+
+	app.writeJSON(w, http.StatusOK, service)
 }

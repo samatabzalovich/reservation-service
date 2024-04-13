@@ -7,6 +7,7 @@ type RequestPayload struct {
 	Token       TokenPayload `json:"token,omitempty"`
 	Sms         SmsPayload   `json:"sms,omitempty"`
 	Institution InstPayload  `json:"institution,omitempty"`
+	Category   Category     `json:"category,omitempty"`
 }
 
 type TokenPayload struct {
@@ -58,4 +59,10 @@ type workHours struct {
 	Day   int    `json:"day"`
 	Open  string `json:"open"`
 	Close string `json:"close"`
+}
+
+type Category struct {
+	Id          int64  `json:"id,omitempty"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
 }

@@ -11,7 +11,8 @@ var (
 	ErrInvalidInstID          = errors.New("invalid inst id")
 	ErrInvalidEmployeeID      = errors.New("invalid employee id")
 	ErrInvalidServiceID       = errors.New("invalid service id")
-	
+	ErrInvalidAppointment    = errors.New("invalid appointment")
+	ErrAppointmentStartsIn2Hours = errors.New("appointment can be updated before at least 2 hours")
 )
 
 
@@ -35,5 +36,6 @@ type Models struct {
 		Delete(id int64) error
 		GetAllForClient(clientId int64) ([]*Appointment, error)
 		GetAllForEmployee(employeeId int64) ([]*Appointment, error)
+		
 	}
 }

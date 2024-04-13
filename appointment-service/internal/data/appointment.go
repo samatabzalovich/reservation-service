@@ -4,14 +4,19 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/jackc/pgx"
 )
-const dateTimeFormat = "2006-01-02 15:04:05.999999Z"
+
+const (
+	TimeParse      = "15:04:00"
+	dateTimeFormat = time.RFC3339
+)
 
 type Appointment struct {
-	ID          int      `json:"id"`
+	ID          int64    `json:"id"`
 	ClientID    int      `json:"client_id"`
 	InstId      int      `json:"inst_id"`
 	EmployeeID  int      `json:"employee_id"`
@@ -23,8 +28,40 @@ type Appointment struct {
 	UpdatedAt   DateTime `json:"updated_at"`
 }
 
+type EmployeeSchedule struct {
+	DayOfWeek      int       `json:"day_of_week"`
+	StartTime      time.Time `json:"start_time"`
+	EndTime        time.Time `json:"end_time"`
+	BreakStartTime time.Time `json:"break_start_time"`
+	BreakEndTime   time.Time `json:"break_end_time"`
+}
 
+type SlotResponse struct {
+	StartTime time.Time `json:"start_time"`
+	EndTime   time.Time `json:"end_time"`
+}
 
+func (es *EmployeeSchedule) ParseToTimeStruct(dayOfWeek int, startTime string, endTime string, breakStartTime string, breakEndTime string) error {
+	var err error
+	es.StartTime, err = time.Parse(TimeParse, startTime)
+	if err != nil {
+		return err
+	}
+	es.EndTime, err = time.Parse(TimeParse, endTime)
+	if err != nil {
+		return err
+	}
+	es.BreakStartTime, err = time.Parse(TimeParse, breakStartTime)
+	if err != nil {
+		return err
+	}
+	es.BreakEndTime, err = time.Parse(TimeParse, breakEndTime)
+	if err != nil {
+		return err
+	}
+	es.DayOfWeek = dayOfWeek
+	return nil
+}
 
 type DateTime struct {
 	time.Time
@@ -58,13 +95,42 @@ func NewAppointment(
 	startTime DateTime,
 	endTime DateTime,
 	isCancelled bool,
+	availabeTimeSlots []*SlotResponse,
 ) (*Appointment, error) {
+	startTime.Time = startTime.Time.Local()
+	endTime.Time = endTime.Time.Local()
+	if availabeTimeSlots == nil {
+		return nil, ErrInvalidAppointment
+	}
+	if startTime.Time.Equal(endTime.Time) {
+		return nil, ErrInvalidAppointmentTime
+	}
 	if endTime.Before(startTime.Time) {
 		return nil, ErrInvalidAppointmentTime
 	}
 	if startTime.Local().Before(time.Now()) {
 		return nil, ErrInvalidAppointmentTime
 	}
+
+	// check if the selected time slot is available
+	isAvailable := false
+	for _, slot := range availabeTimeSlots {
+		startHour, startMinute, startSecond := startTime.Time.Clock()
+		endHour, endMinute, endSecond := endTime.Time.Clock()
+		slotStartHour, slotStartMinute, slotStartSecond := slot.StartTime.Clock()
+		if	startHour == slotStartHour && startMinute == slotStartMinute && startSecond == slotStartSecond && endHour == slot.EndTime.Hour() && endMinute == slot.EndTime.Minute() && endSecond == slot.EndTime.Second() {
+			isAvailable = true
+			break
+		}
+	}
+
+	
+	log.Println("isAvailable: ", isAvailable)
+
+	if !isAvailable {
+		return nil, ErrInvalidAppointmentTime
+	}
+
 	if clientID < 1 {
 		return nil, ErrInvalidClientID
 	}
@@ -82,8 +148,8 @@ func NewAppointment(
 		InstId:      instId,
 		EmployeeID:  employeeID,
 		ServiceID:   serviceID,
-		StartTime:   DateTime{startTime.Local()},
-		EndTime:     DateTime{endTime.Local()},
+		StartTime:   DateTime{startTime.Time},
+		EndTime:     DateTime{endTime.Time},
 		IsCancelled: isCancelled,
 	}, nil
 }
@@ -171,15 +237,15 @@ func (m AppointmentModel) GetAllForInst(instId int64) ([]*Appointment, error) {
 }
 
 func (m AppointmentModel) GetById(id int64) (*Appointment, error) {
-	query := `SELECT * FROM appointments WHERE id = $1`
+	query := `SELECT id, user_id, institution_id, employee_id, service_id, start_time, end_time, is_canceled, created_at, updated_at FROM appointments WHERE id = $1`
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	row := m.DB.QueryRowContext(ctx, query, id)
 	var appointment Appointment
 	var startTime time.Time
-		var endTime time.Time
-		var createdAt time.Time
-		var updatedAt time.Time
+	var endTime time.Time
+	var createdAt time.Time
+	var updatedAt time.Time
 	err := row.Scan(
 		&appointment.ID,
 		&appointment.ClientID,
@@ -203,34 +269,17 @@ func (m AppointmentModel) GetById(id int64) (*Appointment, error) {
 }
 
 func (m AppointmentModel) Update(appointment *Appointment) error {
-	query := `UPDATE appointments SET user_id = $1, institution_id = $2, employee_id = $3, service_id = $4, start_time = $5, end_time = $6, is_cancelled = $7, updated_at = CURRENT_TIMESTAMP WHERE id = $8`
+	query := `UPDATE appointments SET start_time = $1, end_time = $2, is_canceled = $3, updated_at = NOW() WHERE id = $4`
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
+	log.Println("appointment updating: ", appointment.IsCancelled)
 	_, err := m.DB.ExecContext(ctx, query,
-		appointment.ClientID,
-		appointment.InstId,
-		appointment.EmployeeID,
-		appointment.ServiceID,
 		appointment.StartTime.Time,
 		appointment.EndTime.Time,
 		appointment.IsCancelled,
 		appointment.ID,
 	)
 	if err != nil {
-		if pgerr, ok := err.(pgx.PgError); ok {
-			if pgerr.ConstraintName == "appointments_employee_id_fkey" {
-				return ErrInvalidEmployeeID
-			}
-			if pgerr.ConstraintName == "appointments_institution_id_fkey" {
-				return ErrInvalidInstID
-			}
-			if pgerr.ConstraintName == "appointments_service_id_fkey" {
-				return ErrInvalidServiceID
-			}
-			if pgerr.ConstraintName == "appointments_user_id_fkey" {
-				return ErrInvalidClientID
-			}
-		}
 		return err
 	}
 	return nil
@@ -335,4 +384,28 @@ func (m AppointmentModel) GetAllForEmployee(employeeId int64) ([]*Appointment, e
 		return nil, err
 	}
 	return appointments, nil
+}
+
+func (m AppointmentModel) GetAvailableTimeSlots(instId int64, employeeId int64, serviceId int64, selectedDay DateTime) ([]DateTime, error) {
+	query := `SELECT start_time FROM appointments WHERE institution_id = $1 AND employee_id = $2 AND service_id = $3 AND DATE(start_time) = $4`
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	rows, err := m.DB.QueryContext(ctx, query, instId, employeeId, serviceId, selectedDay.Time)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var timeSlots []DateTime
+	for rows.Next() {
+		var startTime time.Time
+		err := rows.Scan(&startTime)
+		if err != nil {
+			return nil, err
+		}
+		timeSlots = append(timeSlots, DateTime{startTime})
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+	return timeSlots, nil
 }

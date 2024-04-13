@@ -24,9 +24,15 @@ func (app *Config) routes() http.Handler {
 	mux.Post("/", app.Broker)
 
 	mux.Post("/handleAuth", app.HandleAuthSubmission)
+	mux.Get("/institutions/owner/{ownerId}", app.GetInstitutionsForOwner)
 	mux.Route("/handleInstitution", func(r chi.Router) {
 		r.Use(app.Authenticate)
 		r.Post("/", app.HandleInstitutionSubmission)
+		
+	})
+	mux.Route("/category", func(r chi.Router) {
+		r.Use(app.Authenticate)
+		r.Post("/", app.CreateCategory)
 	})
 	mux.Get("/listInstitutions", app.ListInstitutions)
 	mux.Get("/getCategories", app.GetCategories)

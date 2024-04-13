@@ -9,9 +9,13 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-
+	"github.com/go-chi/chi/v5"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+)
+
+var (
+	ErrBadRequest = errors.New("bad request")
 )
 
 type jsonResponse struct {
@@ -60,41 +64,42 @@ func (app *Config) writeJSON(w http.ResponseWriter, status int, data any, header
 
 	return nil
 }
+
 // Modified rpcErrorJson function to handle gRPC status codes
 func (app *Config) rpcErrorJson(w http.ResponseWriter, err error) error {
-    // Extract the gRPC status from the error
-    st, ok := status.FromError(err)
-    if !ok {
-        // This is not a gRPC error
-        return app.writeJSON(w, http.StatusInternalServerError, jsonResponse{
-            Error:   true,
-            Message: "An unexpected error occurred",
-        })
-    }
+	// Extract the gRPC status from the error
+	st, ok := status.FromError(err)
+	if !ok {
+		// This is not a gRPC error
+		return app.writeJSON(w, http.StatusInternalServerError, jsonResponse{
+			Error:   true,
+			Message: "An unexpected error occurred",
+		})
+	}
 
-    // Map gRPC status codes to HTTP status codes
-    var statusCode int
-    switch st.Code() {
-    case codes.InvalidArgument:
-        statusCode = http.StatusBadRequest
-    case codes.NotFound:
-        statusCode = http.StatusNotFound
-    case codes.AlreadyExists:
-        statusCode = http.StatusConflict
-    case codes.PermissionDenied:
-        statusCode = http.StatusForbidden
-    case codes.Unauthenticated:
-        statusCode = http.StatusUnauthorized
-    default:
-        statusCode = http.StatusInternalServerError
-    }
+	// Map gRPC status codes to HTTP status codes
+	var statusCode int
+	switch st.Code() {
+	case codes.InvalidArgument:
+		statusCode = http.StatusBadRequest
+	case codes.NotFound:
+		statusCode = http.StatusNotFound
+	case codes.AlreadyExists:
+		statusCode = http.StatusConflict
+	case codes.PermissionDenied:
+		statusCode = http.StatusForbidden
+	case codes.Unauthenticated:
+		statusCode = http.StatusUnauthorized
+	default:
+		statusCode = http.StatusInternalServerError
+	}
 
-    // Simplify the message by removing the gRPC error prefix if present
+	// Simplify the message by removing the gRPC error prefix if present
 
-    return app.writeJSON(w, statusCode, jsonResponse{
-        Error:   true,
-        Message: st.Message(),
-    })
+	return app.writeJSON(w, statusCode, jsonResponse{
+		Error:   true,
+		Message: st.Message(),
+	})
 }
 func (app *Config) errorJson(w http.ResponseWriter, err error, status ...int) error {
 	statusCode := http.StatusBadRequest
@@ -162,4 +167,12 @@ func (app *Config) getWorkHours(requestPayload RequestPayload) []*inst.WorkingHo
 		workHours = append(workHours, temp)
 	}
 	return workHours
+}
+
+func (app *Config) readIntParam(r *http.Request, key string) (int64, error) {
+	value := chi.URLParam(r, key)
+	if value == "" {
+		return 0, ErrBadRequest
+	}
+	return strconv.ParseInt(value, 10, 64)
 }

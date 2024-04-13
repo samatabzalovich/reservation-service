@@ -15,6 +15,7 @@ import (
 type Config struct {
 	port string
 	Models data.Models
+	staffServiceHost string
 }
 
 func main() {
@@ -22,6 +23,7 @@ func main() {
 	app := Config{
 		port: "80",
 		Models: data.New(db),
+		staffServiceHost: "staff-service/",
 	}
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%s", app.port),

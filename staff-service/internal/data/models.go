@@ -3,6 +3,7 @@ package data
 import (
 	"database/sql"
 	"errors"
+	"time"
 )
 
 var (
@@ -42,6 +43,7 @@ type Models struct {
 		UpdateServices(employee *Employee) error 
 		UpdateSchedule(employee *Employee) error 
 		Delete(id int64) error
+		GetEmployeeScheduleAndService(employeeId int64, serviceId int64, selectedDay time.Time) (*TypeForEmployeeTimeSlots, error)
 	}
 	Service interface {
 		Insert(service *Service) error

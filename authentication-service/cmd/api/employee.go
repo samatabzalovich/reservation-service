@@ -9,6 +9,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
+
 func (employeeService *EmployeeService) RegisterEmployee(ctx context.Context, req *employee.TokenEmployeeRegisterRequest) (*employee.TokenEmployeeRegisterResponse, error) {
 	instId := req.GetInstitutionId()
 	ownerId := req.GetOwnerId()
@@ -18,7 +19,7 @@ func (employeeService *EmployeeService) RegisterEmployee(ctx context.Context, re
 		case data.ErrRecordNotFound:
 			return nil, status.Error(codes.NotFound, data.ErrRecordNotFound.Error())
 		default:
-			return nil, status.Error(codes.Internal, "internal server error")
+			return nil, status.Error(codes.Internal, "data server error")
 		}
 	}
 

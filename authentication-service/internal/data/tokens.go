@@ -81,14 +81,14 @@ func (m TokenModel) Insert(token *Token) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	_, err := m.DB.ExecContext(ctx, query, args...)
-	
+
 	if err != nil {
 		if pgerr, ok := err.(pgx.PgError); ok {
 			log.Println(pgerr.Code)
 			if pgerr.Code == "23503" {
 				return ErrRecordNotFound
 			}
-		} 
+		}
 	}
 	return err
 }

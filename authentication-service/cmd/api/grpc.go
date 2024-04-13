@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	InternalServerErr = "internal server error"
+	InternalServerErr = "data server error"
 )
 
 type AuthService struct {

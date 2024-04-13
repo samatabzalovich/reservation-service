@@ -1,3 +1,4 @@
+
 CREATE TABLE IF NOT EXISTS employee_schedule (
     employee_id BIGINT REFERENCES employee (id) ON DELETE CASCADE,
     day_of_week INT, -- 0 = Sunday, 1 = Monday, ..., 6 = Saturday

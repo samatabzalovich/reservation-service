@@ -7,8 +7,8 @@ import (
 )
 
 var (
-	ErrRecordNotFound = errors.New("record not found")
-	ErrEditConflict   = errors.New("edit conflict")
+	ErrRecordNotFound  = errors.New("record not found")
+	ErrEditConflict    = errors.New("edit conflict")
 	ErrUniqueViolation = errors.New("unique violation")
 )
 var db *sql.DB

@@ -1,3 +1,4 @@
+
 CREATE TABLE IF NOT EXISTS employee (
     id BIGSERIAL PRIMARY KEY,
     inst_id BIGINT REFERENCES institution (id) ON DELETE CASCADE,

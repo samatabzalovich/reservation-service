@@ -1,0 +1,39 @@
+package main
+
+import (
+	"errors"
+	"net/http"
+
+	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/cors"
+)
+
+func (app *Config) routes() http.Handler {
+	mux := chi.NewRouter()
+
+	// specify who is allowed to connect
+	mux.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"https://*", "http://*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: true,
+		MaxAge:           300,
+	}))
+	mux.Use(middleware.Heartbeat("/ping"))
+	mux.Route("/notification", func(r chi.Router) {
+		r.Post("/device-token", app.Insert)
+		r.Get("/device-token/{token}", app.GetByToken)
+		r.Get("/device-token/user/{id}", app.GetByUserID)
+		r.Put("/device-token", app.Update)
+		r.Delete("/device-token/{token}", app.Delete)
+	})
+	mux.NotFound(app.NotFound)
+	return mux
+}
+
+
+func (app *Config) NotFound(w http.ResponseWriter, r *http.Request) {
+	app.errorJson(w, errors.New("endpoint not found"), http.StatusNotFound)
+}

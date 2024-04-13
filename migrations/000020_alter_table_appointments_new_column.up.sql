@@ -1,0 +1,1 @@
+ALTER TABLE  appointments ADD COLUMN if not exists  is_notified bool DEFAULT  FALSE;

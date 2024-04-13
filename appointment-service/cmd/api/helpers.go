@@ -4,16 +4,17 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
-
-
 
 type jsonResponse struct {
 	Error   bool   `json:"error"`
@@ -22,11 +23,12 @@ type jsonResponse struct {
 }
 
 var (
-	ErrNotFound = errors.New("resource not found")
-	ErrBadRequest = errors.New("bad request")
-	ErrInternal = errors.New("internal server error")
+	ErrNotFound       = errors.New("resource not found")
+	ErrBadRequest     = errors.New("bad request")
+	ErrInternal       = errors.New("data server error")
 	ErrAuthentication = errors.New("authentication failed")
 )
+
 func (app *Config) readJSON(w http.ResponseWriter, r *http.Request, data any) error {
 	maxBytes := 1048576 // one megabyte
 
@@ -47,14 +49,25 @@ func (app *Config) readJSON(w http.ResponseWriter, r *http.Request, data any) er
 }
 
 
-// func (app *Config) readStringParam(r *http.Request, key string) (string, error) {
-// 	value := chi.URLParam(r, key)
-// 	if value == "" {
-// 		return "", ErrBadRequest
-// 	}
+func (app *Config) readString(qs url.Values, key string, defaultValue string) string {
+	s := qs.Get(key)
 
-// 	return value, nil
-// }
+	if s == "" {
+		return defaultValue
+	}
+
+	return s
+}
+
+func (app *Config) readTimeParam(name string, qs url.Values) (time.Time, error) {
+	
+	val := app.readString(qs, name, "")
+	if val == "" {
+		return time.Time{}, errors.New("missing time parameter")
+	}
+	return time.Parse(time.RFC3339, val)
+}
+
 
 func (app *Config) readIntParam(r *http.Request, key string) (int64, error) {
 	value := chi.URLParam(r, key)
@@ -64,7 +77,6 @@ func (app *Config) readIntParam(r *http.Request, key string) (int64, error) {
 	//parse string to int64
 	return strconv.ParseInt(value, 10, 64)
 }
-
 
 func (app *Config) writeJSON(w http.ResponseWriter, status int, data any, headers ...http.Header) error {
 	out, err := json.Marshal(data)
@@ -88,7 +100,7 @@ func (app *Config) writeJSON(w http.ResponseWriter, status int, data any, header
 	return nil
 }
 func (app *Config) errorJson(w http.ResponseWriter, err error, status ...int) error {
-	statusCode := http.StatusBadRequest
+	statusCode := http.StatusInternalServerError
 
 	if len(status) > 0 {
 		statusCode = status[0]
@@ -101,40 +113,69 @@ func (app *Config) errorJson(w http.ResponseWriter, err error, status ...int) er
 	return app.writeJSON(w, statusCode, payload)
 }
 
-
 func (app *Config) rpcErrorJson(w http.ResponseWriter, err error) error {
-    // Extract the gRPC status from the error
-    st, ok := status.FromError(err)
-    if !ok {
-        // This is not a gRPC error
-        return app.writeJSON(w, http.StatusInternalServerError, jsonResponse{
-            Error:   true,
-            Message: "An unexpected error occurred",
-        })
-    }
+	// Extract the gRPC status from the error
+	st, ok := status.FromError(err)
+	if !ok {
+		// This is not a gRPC error
+		return app.writeJSON(w, http.StatusInternalServerError, jsonResponse{
+			Error:   true,
+			Message: "An unexpected error occurred",
+		})
+	}
 
-    // Map gRPC status codes to HTTP status codes
-    var statusCode int
-    switch st.Code() {
-    case codes.InvalidArgument:
-        statusCode = http.StatusBadRequest
-    case codes.NotFound:
-        statusCode = http.StatusNotFound
-    case codes.AlreadyExists:
-        statusCode = http.StatusConflict
-    case codes.PermissionDenied:
-        statusCode = http.StatusForbidden
-    case codes.Unauthenticated:
-        statusCode = http.StatusUnauthorized
-    default:
-        statusCode = http.StatusInternalServerError
-    }
+	// Map gRPC status codes to HTTP status codes
+	var statusCode int
+	switch st.Code() {
+	case codes.InvalidArgument:
+		statusCode = http.StatusBadRequest
+	case codes.NotFound:
+		statusCode = http.StatusNotFound
+	case codes.AlreadyExists:
+		statusCode = http.StatusConflict
+	case codes.PermissionDenied:
+		statusCode = http.StatusForbidden
+	case codes.Unauthenticated:
+		statusCode = http.StatusUnauthorized
+	default:
+		statusCode = http.StatusInternalServerError
+	}
 
-    // Simplify the message by removing the gRPC error prefix if present
-    errorMsg := strings.TrimPrefix(st.Message(), "rpc error: code = "+st.Code().String()+" desc = ")
+	// Simplify the message by removing the gRPC error prefix if present
+	errorMsg := strings.TrimPrefix(st.Message(), "rpc error: code = "+st.Code().String()+" desc = ")
 
-    return app.writeJSON(w, statusCode, jsonResponse{
-        Error:   true,
-        Message: errorMsg,
-    })
+	return app.writeJSON(w, statusCode, jsonResponse{
+		Error:   true,
+		Message: errorMsg,
+	})
 }
+
+func (app *Config) sendGetRequest(endpoint string, output any) error{
+
+	resp, err := http.Get(endpoint)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	
+	if resp.StatusCode == http.StatusNotFound {
+		return ErrNotFound
+	} else if resp.StatusCode == http.StatusInternalServerError{
+		return ErrInternal
+	}
+
+
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalf("Error reading response body. Err: %s", err)
+		return err
+	}
+	err = json.Unmarshal(body, &output)
+	if err != nil {
+		log.Fatalf("Error unmarshalling response body. Err: %s", err)
+		return err
+	}
+	return nil
+}
+

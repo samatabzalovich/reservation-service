@@ -4,14 +4,18 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx"
 )
+
 var (
-	TimeParse        = "15:04:00"
+	TimeParse = "15:04:00"
 )
+
 type Employee struct {
 	ID          int64               `json:"id"`
 	CreatedAt   time.Time           `json:"created_at"`
@@ -46,32 +50,50 @@ type employeeScheduleAux struct {
 	BreakEndTime   string `json:"break_end_time"`
 }
 
+type TypeForEmployeeTimeSlots struct {
+	Schedule ScheduleForEmployeeTimeSlots `json:"schedule"`
+	Service  ServiceForEmployeeTimeSlots         `json:"service"`
+}
+
+type ScheduleForEmployeeTimeSlots struct {
+	DayOfWeek      int       `json:"day_of_week"`
+	StartTime      string `json:"start_time"`
+	EndTime        string `json:"end_time"`
+	BreakStartTime string `json:"break_start_time"`
+	BreakEndTime   string `json:"break_end_time"`
+}
+
+type ServiceForEmployeeTimeSlots struct {
+	Name     string        `json:"name"`
+	Duration string `json:"duration"`
+}
+
 func (es *EmployeeSchedule) ParseToTimeStruct(dayOfWeek int, startTime string, endTime string, breakStartTime string, breakEndTime string) error {
 	var err error
 	es.StartTime, err = time.Parse(TimeParse, startTime)
-			if err != nil {
-				return err
-			}
-			es.EndTime, err = time.Parse(TimeParse, endTime)
-			if err != nil {
-				return err
-			}
-			es.BreakStartTime, err = time.Parse(TimeParse, breakStartTime)
-			if err != nil {
-				return  err
-			}
-			es.BreakEndTime, err = time.Parse(TimeParse, breakEndTime)
-			if err != nil {
-				return err
-			}
-			es.DayOfWeek = dayOfWeek
-			return nil
+	if err != nil {
+		return err
+	}
+	es.EndTime, err = time.Parse(TimeParse, endTime)
+	if err != nil {
+		return err
+	}
+	es.BreakStartTime, err = time.Parse(TimeParse, breakStartTime)
+	if err != nil {
+		return err
+	}
+	es.BreakEndTime, err = time.Parse(TimeParse, breakEndTime)
+	if err != nil {
+		return err
+	}
+	es.DayOfWeek = dayOfWeek
+	return nil
 }
 
 func (es *EmployeeSchedule) UnmarshalJSON(data []byte) error {
 	var aux employeeScheduleAux
-	err := json.Unmarshal(data, &aux);
-	if  err != nil {
+	err := json.Unmarshal(data, &aux)
+	if err != nil {
 		return err
 	}
 	if es.StartTime, err = time.Parse(TimeParse, aux.StartTime); err != nil {
@@ -178,7 +200,7 @@ func (m EmployeeModel) Insert(employee *Employee) error {
 		hbe, mbe, sbe := schedule.BreakEndTime.Clock()
 		query = `
 		INSERT INTO employee_schedule (employee_id, day_of_week, start_time, end_time, break_start_time, break_end_time) VALUES ($1, $2, $3, $4, $5, $6)`
-		args = []any{employeeId, schedule.DayOfWeek, fmt.Sprintf("%d:%d:%d", hs, ms, ss ), fmt.Sprintf("%d:%d:%d",he, me, se), fmt.Sprintf("%d:%d:%d", hbs, mbs, sbs), fmt.Sprintf("%d:%d:%d", hbe, mbe, sbe)}
+		args = []any{employeeId, schedule.DayOfWeek, fmt.Sprintf("%d:%d:%d", hs, ms, ss), fmt.Sprintf("%d:%d:%d", he, me, se), fmt.Sprintf("%d:%d:%d", hbs, mbs, sbs), fmt.Sprintf("%d:%d:%d", hbe, mbe, sbe)}
 		_, err = tx.ExecContext(ctx, query, args...)
 		if err != nil {
 			tx.Rollback()
@@ -533,4 +555,45 @@ func (m EmployeeModel) GetEmployeesForInstitution(instId int64) ([]*Employee, er
 		}
 	}
 	return employees, nil
+}
+
+func (m EmployeeModel) GetEmployeeScheduleAndService(employeeId int64, serviceId int64, selectedDay time.Time) (*TypeForEmployeeTimeSlots, error) {
+	query := `
+	SELECT day_of_week, start_time, end_time, break_start_time, break_end_time
+	FROM employee_schedule
+	WHERE employee_id = $1 AND day_of_week = $2`
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	var schedule ScheduleForEmployeeTimeSlots
+	err := m.DB.QueryRowContext(ctx, query, employeeId, int(selectedDay.Weekday())).Scan(
+		&schedule.DayOfWeek,
+		&schedule.StartTime,
+		&schedule.EndTime,
+		&schedule.BreakStartTime,
+		&schedule.BreakEndTime,
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrRecordNotFound
+		}
+		return nil, err
+	}
+	
+	query = `
+	SELECT name, duration
+	FROM services
+	WHERE id = $1`
+	var service ServiceForEmployeeTimeSlots
+	var durationStr string
+	err = m.DB.QueryRowContext(ctx, query, serviceId).Scan(&service.Name, &durationStr)
+	if err != nil {
+		return nil, err
+	}
+	durationStr = strings.Replace(durationStr, ":", "h", 1)
+	durationStr = strings.Replace(durationStr, ":", "m", 1)
+	service.Duration = durationStr
+	return &TypeForEmployeeTimeSlots{
+		Schedule: schedule,
+		Service:  service,
+	}, nil
 }

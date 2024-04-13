@@ -23,7 +23,9 @@ func (app *Config) routes() http.Handler {
 	mux.Use(middleware.Heartbeat("/ping"))
 
 	// mux.Get("/employee/{id}", app.GetEmployeeById)
+	mux.Get("/schedule/{employee_id}/{service_id}", app.GetEmployeeScheduleAndService)
 	mux.Route("/employee", func(r chi.Router) {
+		
 		r.Use(app.requireAuthentication)
 		r.Use(app.requireActivatedUser)
 		r.Post("/create", app.CreateEmployee)
@@ -44,7 +46,9 @@ func (app *Config) routes() http.Handler {
 	//mux.Get("/service/{id}", app.GetServiceById)
 	mux.Get("/institution-service/{id}", app.GetServiceForInstitution)
 	mux.Get("/institution-employee/{instId}", app.GetAllEmployeesForInstitution)
+	mux.Get("/service/{id}", app.GetService)
 	mux.Route("/service", func(r chi.Router) {
+		
 		r.Use(app.requireAuthentication)
 		r.Use(app.requireActivatedUser)
 		r.Post("/create", app.CreateService) //TODO: add middleware to check if user is owner of institution

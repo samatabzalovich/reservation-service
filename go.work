@@ -6,4 +6,5 @@ use (
 	./broker-service
 	./institution-service
 	./staff-service
+	./notification-service
 )

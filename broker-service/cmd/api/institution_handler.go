@@ -3,8 +3,9 @@ package main
 import (
 	"context"
 	"errors"
-	"google.golang.org/grpc/metadata"
 	"net/http"
+
+	"google.golang.org/grpc/metadata"
 )
 
 func (app *Config) HandleInstitutionSubmission(w http.ResponseWriter, r *http.Request) {
@@ -75,4 +76,14 @@ func (app *Config) ListInstitutions(w http.ResponseWriter, r *http.Request) {
 
 	app.SearchInstitutionsViaGRpc(w, filter)
 
+}
+
+func (app *Config) GetInstitutionsForOwner(w http.ResponseWriter, r *http.Request) {
+	ownerId, err := app.readIntParam(r, "ownerId")
+	if err != nil {
+		app.errorJson(w, err)
+		return
+	}
+
+	app.GetInstitutionsForOwnerViaGrpc(w, RequestPayload{Institution: InstPayload{OwnerId: ownerId}})
 }

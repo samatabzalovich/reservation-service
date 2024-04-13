@@ -127,7 +127,7 @@ func (authServer *AuthService) Authenticate(ctx context.Context, req *auth.AuthR
 
 	if input.Token == "" {
 		res := &auth.AuthResponse{Result: false, User: nil}
-		return res, status.Error(codes.InvalidArgument, "token is not provided")
+		return res, status.Error(codes.InvalidArgument, "token is empty")
 	}
 	v := validator.New()
 	if data2.ValidateTokenPlaintext(v, input.Token); !v.Valid() {
@@ -140,7 +140,7 @@ func (authServer *AuthService) Authenticate(ctx context.Context, req *auth.AuthR
 		switch {
 		case errors.Is(err, data2.ErrRecordNotFound):
 			res := &auth.AuthResponse{Result: false, User: nil}
-			return res, status.Error(codes.NotFound, "user not found")
+			return res, status.Error(codes.Unauthenticated, "user not found")
 		default:
 			res := &auth.AuthResponse{Result: false, User: nil}
 			return res, status.Error(codes.Internal, InternalServerErr)

@@ -34,3 +34,29 @@ func (app *Config) GetCategoriesViaGRpc(w http.ResponseWriter) {
 			"error":      false,
 		})
 }
+
+func (app *Config) CreateCategoryViaGRpc(w http.ResponseWriter, ctx context.Context, requestPayload RequestPayload) {
+	conn, err := grpc.Dial("institution-service:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	if err != nil {
+		app.rpcErrorJson(w, err)
+		return
+	}
+	defer conn.Close()
+
+	c := inst.NewCategoryServiceClient(conn)
+
+	res, err := c.CreateCategory(ctx, &inst.InstitutionCategory{
+		Name:        requestPayload.Category.Name,
+		Description: requestPayload.Category.Description,
+	})
+	if err != nil {
+		app.rpcErrorJson(w, err)
+		return
+	}
+
+	app.writeJSON(w, http.StatusAccepted,
+		map[string]any{
+			"category_id": res.Id,
+			"error":       false,
+		})
+}
