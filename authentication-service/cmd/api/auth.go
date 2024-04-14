@@ -77,6 +77,7 @@ func (authServer *AuthService) Register(ctx context.Context, req *auth.RegReques
 		Type     string `json:"type"`
 	}
 
+	
 	userInput.UserName = input.UserName
 	userInput.Number = input.PhoneNumber
 	userInput.Password = input.Password
@@ -87,6 +88,11 @@ func (authServer *AuthService) Register(ctx context.Context, req *auth.RegReques
 		Type:      input.Type,
 		Activated: false,
 	}
+	if newUser.Type == "admin" {
+		res := &auth.RegResponse{Result: "admin cannot be created"}
+		return res, status.Error(codes.InvalidArgument, "admin cannot be created")
+	}
+
 
 	err := newUser.Password.Set(input.Password)
 	if err != nil {

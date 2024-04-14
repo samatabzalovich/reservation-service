@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"net/http"
 	"notification-service/internal/data"
 
@@ -16,12 +17,31 @@ func (app *Config) Insert(w http.ResponseWriter, r *http.Request) {
 		app.errorJson(w, err)
 		return
 	}
-	result, err := app.Models.DeviceTokens.Insert(token)
+	tokenData, err := app.Models.DeviceTokens.GetByDeviceID(token.DeviceID, token.UserID)
+	if err != nil {
+		if errors.Is(err, data.ErrRecordNotFound) {
+			result, err := app.Models.DeviceTokens.Insert(token)
+			if err != nil {
+				app.errorJson(w, err)
+				return
+			}
+			app.writeJSON(w, http.StatusCreated, map [string]interface{}{"message": "Device token inserted successfully", "id": result})
+			return
+		}
+		app.errorJson(w, err)
+		return
+	}
+	err = app.Models.DeviceTokens.Update(data.DeviceToken{
+		ID: tokenData.ID,
+		UserID: token.UserID,
+		DeviceID: token.DeviceID,
+		Token: token.Token,
+	})
 	if err != nil {
 		app.errorJson(w, err)
 		return
 	}
-	app.writeJSON(w, http.StatusCreated, map [string]interface{}{"message": "Device token inserted successfully", "id": result})
+	app.writeJSON(w, http.StatusCreated, map [string]interface{}{"message": "Device token updated successfully", "id": tokenData.ID})
 }
 
 func (app *Config) GetByToken(w http.ResponseWriter, r *http.Request)  {

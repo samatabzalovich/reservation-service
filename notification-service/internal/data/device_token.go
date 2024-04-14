@@ -30,6 +30,12 @@ func (m DeviceTokenModel) Insert(token DeviceToken) (int64, error) {
 			if pgerr.ConstraintName == "user_devices_user_id_fkey" {
 				return 0, ErrUserNotFound
 			}
+			if pgerr.ConstraintName == "user_devices_device_id_key" {
+				return 0, ErrTokenAlreadyExists
+			}
+			if pgerr.ConstraintName == "user_devices_token_key" {
+				return 0, ErrTokenAlreadyExists
+			}
 
 		}
 		return 0, err
@@ -43,6 +49,23 @@ func (m DeviceTokenModel) GetByToken(token string) (*DeviceToken, error) {
 	var t DeviceToken
 	err := row.Scan(&t.ID, &t.UserID, &t.DeviceID, &t.Token, &t.CreatedAt, &t.UpdatedAt)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, ErrRecordNotFound
+		}
+		return nil, err
+	}
+	return &t, nil
+}
+
+func (m DeviceTokenModel) GetByDeviceID(deviceID string, userId int64) (*DeviceToken, error) {
+	stmt := `SELECT id, user_id, device_id, token, created_at, updated_at FROM user_devices WHERE device_id = $1 AND user_id = $2`
+	row := m.DB.QueryRow(stmt, deviceID, userId)
+	var t DeviceToken
+	err := row.Scan(&t.ID, &t.UserID, &t.DeviceID, &t.Token, &t.CreatedAt, &t.UpdatedAt)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, ErrRecordNotFound
+		}
 		return nil, err
 	}
 	return &t, nil

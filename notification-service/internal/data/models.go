@@ -34,6 +34,7 @@ type Models struct {
 		Insert(token DeviceToken) (int64, error)
 		GetByToken(token string) (*DeviceToken, error)
 		GetByUserID(userID int64) ([]*DeviceToken, error)
+		GetByDeviceID(deviceID  string, userId int64) (*DeviceToken, error)
 		Update(token DeviceToken) error
 		DeleteByToken(token string) error
 		Delete(id int64) error
