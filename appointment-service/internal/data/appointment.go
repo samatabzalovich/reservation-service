@@ -3,7 +3,6 @@ package data
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"log"
 	"time"
 
@@ -67,10 +66,10 @@ type DateTime struct {
 	time.Time
 }
 
-func (ct DateTime) MarshalJSON() ([]byte, error) {
-	formattedTime := fmt.Sprintf("\"%s\"", ct.Format(dateTimeFormat))
-	return []byte(formattedTime), nil
-}
+// func (ct DateTime) MarshalJSON() ([]byte, error) {
+// 	formattedTime := fmt.Sprintf("\"%s\"", ct.Format(dateTimeFormat))
+// 	return []byte(formattedTime), nil
+// }
 
 func (ct *DateTime) UnmarshalJSON(data []byte) error {
 	// Trim the quotes from the JSON string
@@ -118,13 +117,12 @@ func NewAppointment(
 		startHour, startMinute, startSecond := startTime.Time.Clock()
 		endHour, endMinute, endSecond := endTime.Time.Clock()
 		slotStartHour, slotStartMinute, slotStartSecond := slot.StartTime.Clock()
-		if	startHour == slotStartHour && startMinute == slotStartMinute && startSecond == slotStartSecond && endHour == slot.EndTime.Hour() && endMinute == slot.EndTime.Minute() && endSecond == slot.EndTime.Second() {
+		if startHour == slotStartHour && startMinute == slotStartMinute && startSecond == slotStartSecond && endHour == slot.EndTime.Hour() && endMinute == slot.EndTime.Minute() && endSecond == slot.EndTime.Second() {
 			isAvailable = true
 			break
 		}
 	}
 
-	
 	log.Println("isAvailable: ", isAvailable)
 
 	if !isAvailable {

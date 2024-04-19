@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"staff-service/internal/data"
 )
 
 type contextKey string
@@ -11,8 +12,9 @@ type contextKey string
 const userContextKey = contextKey("user")
 
 type User struct {
-	ID        int64 `json:"id"`
-	Activated bool  `json:"activated"`
+	ID        int64  `json:"id"`
+	Activated bool   `json:"activated"`
+	Type      string `json:"type"`
 }
 
 func (app *Config) contextSetUserId(r *http.Request, user *User) *http.Request {
@@ -24,6 +26,19 @@ func (app *Config) contextGetUser(r *http.Request) (*User, error) {
 	user, ok := r.Context().Value(userContextKey).(*User)
 	if !ok {
 		return nil, errors.New("user not found in context")
+	}
+	return user, nil
+}
+
+func (app *Config) contextSetEmployee(r *http.Request, user *data.Employee) *http.Request {
+	ctx := context.WithValue(r.Context(), userContextKey, user)
+	return r.WithContext(ctx)
+}
+
+func (app *Config) contextGetEmployee(r *http.Request) (*data.Employee, error) {
+	user, ok := r.Context().Value(userContextKey).(*data.Employee)
+	if !ok {
+		return nil, errors.New("employee not found in context")
 	}
 	return user, nil
 }

@@ -45,7 +45,7 @@ func main() {
 	}
 	
 	app.startCronJob()
-	go app.ListenForNotificationRequests()
+	go app.ListenForAppointmentNotificationRequests()
 	log.Printf("Starting notification sevice on port %s\n", app.port)
 	err := srv.ListenAndServe()
 	if err != nil {

@@ -34,6 +34,7 @@ func (app *Config) AuthenticateViaGrpc(token string) (*User, error) {
 	return &User{
 		ID:        res.User.Id,
 		Activated: res.User.Activated,
+		Type:      res.User.Type,
 	}, nil
 }
 
@@ -71,6 +72,66 @@ func (app *Config) GetInstitutionForToken(token string) (*inst.Institution, erro
 
 	res, err := c.GetForToken(ctx, &inst.GetInstForTokenRequest{
 		Token: token,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (app *Config) GetInstitutions(token string) (*inst.Institution, error) {
+	conn, err := grpc.Dial("institution-service:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	c := inst.NewInstitutionServiceClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	res, err := c.GetForToken(ctx, &inst.GetInstForTokenRequest{
+		Token: token,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (app *Config) GetInstitution(instId int64) (*inst.Institution, error) {
+	conn, err := grpc.Dial("institution-service:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	c := inst.NewInstitutionServiceClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	res, err := c.GetInstitution(ctx, &inst.GetInstitutionsByIdRequest{
+		Id: instId,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (app *Config) GetInstitutionForEmployee(employeeId int64) (*inst.Institution, error) {
+	conn, err := grpc.Dial("institution-service:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	c := inst.NewInstitutionServiceClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	res, err := c.GetInstitutionForEmployee(ctx, &inst.GetInstitutionsByIdRequest{
+		Id: employeeId,
 	})
 	if err != nil {
 		return nil, err

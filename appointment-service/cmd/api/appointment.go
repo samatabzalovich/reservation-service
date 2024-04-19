@@ -4,6 +4,7 @@ import (
 	"appointment-service/internal/data"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -225,7 +226,14 @@ func (app *Config) CreateAppointment(w http.ResponseWriter, r *http.Request) {
 		app.errorJson(w, err)
 		return
 	}
-
+	// TODO: send notification test
+	go func() { 
+		
+		if err := app.SendAppointmentNotification(*appointment); err != nil {
+			log.Printf("Error sending appointment notification: %v", err) 
+		}
+	}()
+	
 	app.writeJSON(w, http.StatusCreated, map[string]any{"id": appointment.ID})
 }
 

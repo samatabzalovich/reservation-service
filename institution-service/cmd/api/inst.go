@@ -54,6 +54,9 @@ func (instService *InstitutionService) CreateInstitution(ctx context.Context, re
 func (instService *InstitutionService) GetInstitution(ctx context.Context, req *inst.GetInstitutionsByIdRequest) (*inst.Institution, error) {
 	institution, err := instService.Models.Institutions.GetById(req.GetId())
 	if err != nil {
+		if err == data.ErrRecordNotFound {
+			return nil, status.Error(codes.NotFound, "not found")
+		}
 		return nil, status.Error(codes.Internal, "failed to get institution")
 	}
 	workHours := instService.getWorkHoursForResponse(institution.WorkingHours)
@@ -75,6 +78,14 @@ func (instService *InstitutionService) GetInstitution(ctx context.Context, req *
 }
 
 func (instService *InstitutionService) UpdateInstitution(ctx context.Context, req *inst.UpdateInstitutionRequest) (*inst.UpdateInstitutionResponse, error) {
+	user, err := contextGetUser(ctx)
+	if err != nil {
+		return nil, status.Error(codes.PermissionDenied, err.Error())
+	}
+	isOwner, err := instService.CheckIfUserOwnerOfInstitution(user, req.GetInstitution().Id)
+	if err != nil || !isOwner {
+		return nil, status.Error(codes.PermissionDenied, "user is not owner of institution or id is not valid")
+	}
 	workHours := instService.getWorkHoursForRequest(req.GetInstitution().WorkingHours)
 	if workHours == nil {
 		return &inst.UpdateInstitutionResponse{Id: 0}, status.Error(codes.InvalidArgument, data.ErrInvalidWorkingHours.Error())
@@ -94,11 +105,12 @@ func (instService *InstitutionService) UpdateInstitution(ctx context.Context, re
 		Categories:   req.GetInstitution().Categories,
 		WorkingHours: workHours,
 	}
-	version, err := instService.Models.Institutions.GetVersionByIdForOwner(institution.OwnerId, institution.ID)
+	version, err := instService.Models.Institutions.GetVersionByIdForOwner(user.UserId, institution.ID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, InvalidServerErr)
 	}
 	institution.Version = version
+	institution.OwnerId = user.UserId
 	err = instService.Models.Institutions.Update(institution)
 	if err != nil {
 		switch {
@@ -113,8 +125,27 @@ func (instService *InstitutionService) UpdateInstitution(ctx context.Context, re
 	return &inst.UpdateInstitutionResponse{Id: req.Institution.Id}, nil
 }
 
+func (instService *InstitutionService) CheckIfUserOwnerOfInstitution(user *AuthPayload, instId int64) (bool,error) {
+	institution, err := instService.Models.Institutions.GetById(instId)
+	if err != nil {
+		return false, status.Error(codes.InvalidArgument, data.ErrRecordNotFound.Error())
+	}
+	if institution.OwnerId != user.UserId {
+		return false, nil
+	}
+	return true, nil
+}
+
 func (instService *InstitutionService) DeleteInstitution(ctx context.Context, req *inst.DeleteInstitutionRequest) (*inst.DeleteInstitutionResponse, error) {
-	err := instService.Models.Institutions.Delete(req.GetId())
+	user, err := contextGetUser(ctx)
+	if err != nil {
+		return nil, status.Error(codes.PermissionDenied, err.Error())
+	}
+	isOwner, err := instService.CheckIfUserOwnerOfInstitution(user, req.GetId())
+	if err != nil || !isOwner {
+		return nil, status.Error(codes.PermissionDenied, "user is not owner of institution")
+	}
+	err = instService.Models.Institutions.Delete(req.GetId())
 	if err != nil {
 		return nil, status.Error(codes.Internal, InvalidServerErr)
 	}
@@ -219,4 +250,18 @@ func (instService *InstitutionService) GetInstitutionsForOwner(ctx context.Conte
 		LastPage:  int32(metadata.LastPage),
 	}
 	return &inst.InstitutionsResponse{Institution: institutionsResponse, Metadata: metadataRes}, nil
+}
+
+func (instService *InstitutionService) GetInstitutionForEmployee(ctx context.Context, req *inst.GetInstitutionsByIdRequest) (*inst.Institution, error) {
+	institution, err := instService.Models.Institutions.GetForEmployee(req.GetId())
+	if err != nil {
+		if errors.Is(err, data.ErrRecordNotFound) {
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
+		return nil, status.Error(codes.Internal, InvalidServerErr)
+	}
+	return &inst.Institution{
+		Id:      institution.ID,
+		OwnerId: institution.OwnerId,
+	}, nil
 }

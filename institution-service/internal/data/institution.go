@@ -187,27 +187,22 @@ func (m InstitutionModel) GetById(id int64) (*Institution, error) {
 	WHERE i.id = $1`
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	rows, err := m.DB.QueryContext(ctx, query, id)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
+	row := m.DB.QueryRowContext(ctx, query, id)
 	var institution Institution
-	for rows.Next() {
-		var categoryID sql.NullInt64
-		err = rows.Scan(&institution.ID, &institution.Name, &institution.Description, &institution.Website, &institution.OwnerId, &institution.Latitude, &institution.Longitude, &institution.Address, &institution.Phone, &institution.Country, &institution.City, &categoryID)
-		if err != nil {
-			return nil, err
+	var categoryID sql.NullInt64
+	err := row.Scan(&institution.ID, &institution.Name, &institution.Description, &institution.Website, &institution.OwnerId, &institution.Latitude, &institution.Longitude, &institution.Address, &institution.Phone, &institution.Country, &institution.City, &categoryID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrRecordNotFound
 		}
-		if categoryID.Valid {
-			institution.Categories = append(institution.Categories, categoryID.Int64)
-		}
-	}
-	if err = rows.Err(); err != nil {
 		return nil, err
 	}
+	if categoryID.Valid {
+		institution.Categories = append(institution.Categories, categoryID.Int64)
+	}
+
 	query = `SELECT day_of_week, open_time, close_time FROM institution_working_hours WHERE institution_id = $1`
-	rows, err = m.DB.QueryContext(ctx, query, id)
+	rows, err := m.DB.QueryContext(ctx, query, id)
 	if err != nil {
 		return nil, err
 	}
@@ -457,4 +452,22 @@ GROUP BY i.id`
 	}
 	metadata := calculateMetadata(len(institutions), 1, len(institutions))
 	return institutions, metadata, nil
+}
+
+func (m InstitutionModel) GetForEmployee(employeeId int64) (*Institution, error) {
+	query := `SELECT i.id, i.name, i.description, i.website, i.owner_id, i.latitude, i.longitude, i.address, i.phone, i.country, i.city
+	FROM institution i
+	JOIN employee e ON i.id = e.inst_id
+	WHERE e.id = $1`
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	var institution Institution
+	err := m.DB.QueryRowContext(ctx, query, employeeId).Scan(&institution.ID, &institution.Name, &institution.Description, &institution.Website, &institution.OwnerId, &institution.Latitude, &institution.Longitude, &institution.Address, &institution.Phone, &institution.Country, &institution.City)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrRecordNotFound
+		}
+		return nil, err
+	}
+	return &institution, nil
 }

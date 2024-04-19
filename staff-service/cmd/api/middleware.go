@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"staff-service/internal/data"
 	"strings"
 )
 
@@ -47,6 +48,49 @@ func (app *Config) requireAuthentication(next http.Handler) http.Handler {
 		}
 
 		r = app.contextSetUserId(r, user)
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (app *Config) requireOwnerRole(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user, err := app.contextGetUser(r)
+		if err != nil {
+			app.errorJson(w, err, http.StatusUnauthorized)
+			return
+		}
+		if !(user.Type == "owner") {
+			app.errorJson(w, ErrAuthentication, http.StatusForbidden)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (app *Config) requireInstOwnerForOwner(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user, err := app.contextGetUser(r)
+		if err != nil {
+			app.errorJson(w, err, http.StatusUnauthorized)
+			return
+		}
+		var input data.Employee
+		err = app.readJSON(w, r, &input)
+		if err != nil {
+			app.errorJson(w, err, http.StatusBadRequest)
+			return
+		}
+
+		institution, err := app.GetInstitution(input.InstId)
+		if err != nil {
+			app.rpcErrorJson(w, err)
+			return
+		}
+		if institution.OwnerId != user.ID {
+			app.errorJson(w, ErrBadRequest, http.StatusForbidden)
+			return
+		}
+		r = app.contextSetEmployee(r, &input)
 		next.ServeHTTP(w, r)
 	})
 }

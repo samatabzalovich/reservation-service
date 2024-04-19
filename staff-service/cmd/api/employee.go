@@ -27,6 +27,8 @@ func (app *Config) CreateEmployee(w http.ResponseWriter, r *http.Request) {
 		switch err {
 		case data.ErrInvalidServices:
 			app.errorJson(w, err, http.StatusBadRequest)
+		case data.ErrInvalidInstId:
+			app.errorJson(w, err, http.StatusBadRequest)
 		default:
 			app.errorJson(w, err, http.StatusInternalServerError)
 		}
@@ -61,7 +63,7 @@ func (app *Config) CreateQRCodeToken(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Config) GetAllEmployeesForInstitution(w http.ResponseWriter, r *http.Request) {
-	instId,err := app.readIntParam(r, "instId")
+	instId, err := app.readIntParam(r, "instId")
 	if err != nil {
 		app.errorJson(w, err, http.StatusBadRequest)
 		return
@@ -74,24 +76,23 @@ func (app *Config) GetAllEmployeesForInstitution(w http.ResponseWriter, r *http.
 	app.writeJSON(w, http.StatusOK, map[string]any{"employees": employees})
 }
 
-
-func (app *Config) GetEmployeeScheduleAndService (w http.ResponseWriter, r *http.Request) {
+func (app *Config) GetEmployeeScheduleAndService(w http.ResponseWriter, r *http.Request) {
 	var (
-		employeeID int64 
-		serviceID int64 
-		selectedDay time.Time 
+		employeeID  int64
+		serviceID   int64
+		selectedDay time.Time
 	)
 	employeeID, err := app.readIntParam(r, "employee_id")
 	if err != nil {
 		app.errorJson(w, err, http.StatusBadRequest)
 		return
 	}
-	serviceID,err = app.readIntParam(r, "service_id")
+	serviceID, err = app.readIntParam(r, "service_id")
 	if err != nil {
 		app.errorJson(w, err, http.StatusBadRequest)
 		return
 	}
-	selectedDay,err = app.readTimeParam( "selected_day", r.URL.Query())
+	selectedDay, err = app.readTimeParam("selected_day", r.URL.Query())
 	if err != nil {
 		app.errorJson(w, err, http.StatusBadRequest)
 		return
@@ -99,9 +100,9 @@ func (app *Config) GetEmployeeScheduleAndService (w http.ResponseWriter, r *http
 	log.Println("employeeID: ", employeeID)
 	log.Println("serviceID: ", serviceID)
 	log.Println("selectedDay: ", selectedDay)
-	employee, err := app.Models.Employees.GetEmployeeScheduleAndService( employeeID, serviceID, selectedDay)
+	employee, err := app.Models.Employees.GetEmployeeScheduleAndService(employeeID, serviceID, selectedDay)
 	if err != nil {
-		if err == data.ErrRecordNotFound {	
+		if err == data.ErrRecordNotFound {
 			app.errorJson(w, err, http.StatusNotFound)
 			return
 		}
@@ -111,3 +112,46 @@ func (app *Config) GetEmployeeScheduleAndService (w http.ResponseWriter, r *http
 	app.writeJSON(w, http.StatusOK, employee)
 }
 
+// Todo: check update method
+func (app *Config) UpdateEmployee(w http.ResponseWriter, r *http.Request) {
+	input, err := app.contextGetEmployee(r)
+	if err != nil {
+		app.errorJson(w, err, http.StatusInternalServerError)
+		return
+	}
+	err = app.Models.Employees.Update(input)
+	if err != nil {
+		app.errorJson(w, err, http.StatusInternalServerError)
+		return
+	}
+	app.writeJSON(w, http.StatusOK, map[string]any{"message": "employee updated"})
+}
+
+func (app *Config) DeleteEmployee(w http.ResponseWriter, r *http.Request) {
+	employeeID, err := app.readIntParam(r, "employee_id")
+	if err != nil {
+		app.errorJson(w, err, http.StatusBadRequest)
+		return
+	}
+	//chekc if user is owner of institution
+	inst, err := app.GetInstitutionForEmployee(employeeID)
+	if err != nil {
+		app.rpcErrorJson(w, err)
+		return
+	}
+	user, err := app.contextGetUser(r)
+	if err != nil {
+		app.errorJson(w, err, http.StatusInternalServerError)
+		return
+	}
+	if inst.OwnerId != user.ID {
+		app.errorJson(w, ErrAuthentication, http.StatusForbidden)
+		return
+	}
+	err = app.Models.Employees.Delete(employeeID)
+	if err != nil {
+		app.errorJson(w, err, http.StatusInternalServerError)
+		return
+	}
+	app.writeJSON(w, http.StatusOK, map[string]any{"message": "employee deleted"})
+}

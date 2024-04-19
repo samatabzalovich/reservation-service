@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -52,11 +53,11 @@ type employeeScheduleAux struct {
 
 type TypeForEmployeeTimeSlots struct {
 	Schedule ScheduleForEmployeeTimeSlots `json:"schedule"`
-	Service  ServiceForEmployeeTimeSlots         `json:"service"`
+	Service  ServiceForEmployeeTimeSlots  `json:"service"`
 }
 
 type ScheduleForEmployeeTimeSlots struct {
-	DayOfWeek      int       `json:"day_of_week"`
+	DayOfWeek      int    `json:"day_of_week"`
 	StartTime      string `json:"start_time"`
 	EndTime        string `json:"end_time"`
 	BreakStartTime string `json:"break_start_time"`
@@ -64,7 +65,7 @@ type ScheduleForEmployeeTimeSlots struct {
 }
 
 type ServiceForEmployeeTimeSlots struct {
-	Name     string        `json:"name"`
+	Name     string `json:"name"`
 	Duration string `json:"duration"`
 }
 
@@ -366,7 +367,7 @@ func (m EmployeeModel) GetById(id int64) (*Employee, error) {
 	query = `
 		SELECT e.service_id, s.name
 		FROM employee_service e
-		JOIN service s on e.service_id = s.id
+		JOIN services s on e.service_id = s.id
 		WHERE employee_id = $1`
 	rows, err = m.DB.QueryContext(ctx, query, employee.ID)
 	if err != nil {
@@ -395,9 +396,12 @@ func (m EmployeeModel) Update(employee *Employee) error {
 	UPDATE employee
 	SET description = $1,
 		photo_url = $2,
-		name = $3
-	WHERE id = $4`
+		name = $3,
+		version = version + 1
+	WHERE id = $4;`
+
 	args := []any{employee.Description, employee.PhotoUrl, employee.Name, employee.ID}
+	log.Printf("Executing query: %s with values: %v", query, args)
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	_, err := m.DB.ExecContext(ctx, query, args...)
@@ -578,7 +582,7 @@ func (m EmployeeModel) GetEmployeeScheduleAndService(employeeId int64, serviceId
 		}
 		return nil, err
 	}
-	
+
 	query = `
 	SELECT name, duration
 	FROM services

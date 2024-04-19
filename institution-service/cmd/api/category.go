@@ -11,7 +11,7 @@ import (
 
 
 func(categoryService *CategoryService) CreateCategory(ctx context.Context, req *inst.InstitutionCategory) (*inst.InstitutionCategory, error) {
-	user, err := categoryService.contextGetUser(ctx)
+	user, err := contextGetUser(ctx)
 	if err != nil || user.Type != "admin"{
 		return nil, status.Error(codes.PermissionDenied, "You do not have permission to create a category")
 	}

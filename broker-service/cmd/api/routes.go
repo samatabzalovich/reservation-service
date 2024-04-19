@@ -28,8 +28,9 @@ func (app *Config) routes() http.Handler {
 	mux.Route("/handleInstitution", func(r chi.Router) {
 		r.Use(app.Authenticate)
 		r.Post("/", app.HandleInstitutionSubmission)
-		
+
 	})
+	mux.Get("/institution/{instId}", app.GetInstitutionById)
 	mux.Route("/category", func(r chi.Router) {
 		r.Use(app.Authenticate)
 		r.Post("/", app.CreateCategory)

@@ -10,10 +10,8 @@ import (
 type DeviceToken struct {
 	ID        int64  `json:"id,omitempty"`
 	UserID    int64  `json:"user_id"`
-	DeviceID  string `json:"device_id"`
 	Token     string `json:"token"`
 	CreatedAt time.Time
-	UpdatedAt time.Time
 }
 
 type DeviceTokenModel struct {
@@ -21,17 +19,14 @@ type DeviceTokenModel struct {
 }
 
 func (m DeviceTokenModel) Insert(token DeviceToken) (int64, error) {
-	stmt := `INSERT INTO user_devices (user_id, device_id, token)
-	VALUES($1, $2, $3) RETURNING id`
+	stmt := `INSERT INTO user_devices (user_id, token)
+	VALUES($1, $2) RETURNING id`
 	var id int64
-	err := m.DB.QueryRow(stmt, token.UserID, token.DeviceID, token.Token).Scan(&id)
+	err := m.DB.QueryRow(stmt, token.UserID, token.Token).Scan(&id)
 	if err != nil {
 		if pgerr, ok := err.(pgx.PgError); ok {
 			if pgerr.ConstraintName == "user_devices_user_id_fkey" {
 				return 0, ErrUserNotFound
-			}
-			if pgerr.ConstraintName == "user_devices_device_id_key" {
-				return 0, ErrTokenAlreadyExists
 			}
 			if pgerr.ConstraintName == "user_devices_token_key" {
 				return 0, ErrTokenAlreadyExists
@@ -44,24 +39,10 @@ func (m DeviceTokenModel) Insert(token DeviceToken) (int64, error) {
 }
 
 func (m DeviceTokenModel) GetByToken(token string) (*DeviceToken, error) {
-	stmt := `SELECT id, user_id, device_id, token, created_at, updated_at FROM user_devices WHERE token = $1`
+	stmt := `SELECT id, user_id, token, created_at FROM user_devices WHERE token = $1`
 	row := m.DB.QueryRow(stmt, token)
 	var t DeviceToken
-	err := row.Scan(&t.ID, &t.UserID, &t.DeviceID, &t.Token, &t.CreatedAt, &t.UpdatedAt)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, ErrRecordNotFound
-		}
-		return nil, err
-	}
-	return &t, nil
-}
-
-func (m DeviceTokenModel) GetByDeviceID(deviceID string, userId int64) (*DeviceToken, error) {
-	stmt := `SELECT id, user_id, device_id, token, created_at, updated_at FROM user_devices WHERE device_id = $1 AND user_id = $2`
-	row := m.DB.QueryRow(stmt, deviceID, userId)
-	var t DeviceToken
-	err := row.Scan(&t.ID, &t.UserID, &t.DeviceID, &t.Token, &t.CreatedAt, &t.UpdatedAt)
+	err := row.Scan(&t.ID, &t.UserID, &t.Token, &t.CreatedAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, ErrRecordNotFound
@@ -72,7 +53,7 @@ func (m DeviceTokenModel) GetByDeviceID(deviceID string, userId int64) (*DeviceT
 }
 
 func (m DeviceTokenModel) GetByUserID(userID int64) ([]*DeviceToken, error) {
-	stmt := `SELECT id, user_id, device_id, token, created_at, updated_at FROM user_devices WHERE user_id = $1`
+	stmt := `SELECT id, user_id, token, created_at FROM user_devices WHERE user_id = $1`
 	rows, err := m.DB.Query(stmt, userID)
 	if err != nil {
 		return nil, err
@@ -82,7 +63,30 @@ func (m DeviceTokenModel) GetByUserID(userID int64) ([]*DeviceToken, error) {
 	var tokens []*DeviceToken
 	for rows.Next() {
 		var t DeviceToken
-		err := rows.Scan(&t.ID, &t.UserID, &t.DeviceID, &t.Token, &t.CreatedAt, &t.UpdatedAt)
+		err := rows.Scan(&t.ID, &t.UserID, &t.Token, &t.CreatedAt)
+		if err != nil {
+			return nil, err
+		}
+		tokens = append(tokens, &t)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+	return tokens, nil
+}
+
+func (m DeviceTokenModel) GetByEmployeeID(employeeId int64) ([]*DeviceToken, error) {
+	stmt := `SELECT d.id, d.user_id, d.token   FROM user_devices d join employee e on d.user_id = e.user_id WHERE e.id = $1`
+	rows, err := m.DB.Query(stmt, employeeId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tokens []*DeviceToken
+	for rows.Next() {
+		var t DeviceToken
+		err := rows.Scan(&t.ID, &t.UserID, &t.Token)
 		if err != nil {
 			return nil, err
 		}

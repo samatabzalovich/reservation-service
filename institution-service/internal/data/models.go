@@ -44,6 +44,8 @@ var (
 	ErrInvalidOpen = errors.New("invalid open time")
 	//ErrInvalidClose is used when the close time is not valid
 	ErrInvalidClose = errors.New("invalid close time")
+	//ErrRecordNotFound is used when the record is not found
+	ErrRecordNotFound = errors.New("record not found")
 )
 
 var db *sql.DB
@@ -75,5 +77,6 @@ type Models struct {
 		Search(categories []int64, searchText string, filters Filters) ([]*Institution, Metadata, error)
 		GetForToken(tokenScope, token string) (*Institution, error)
 		GetForOwner(ownerId int64) ([]*Institution, Metadata, error)
+		GetForEmployee(employeeId int64) (*Institution, error)
 	}
 }

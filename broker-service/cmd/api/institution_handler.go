@@ -87,3 +87,16 @@ func (app *Config) GetInstitutionsForOwner(w http.ResponseWriter, r *http.Reques
 
 	app.GetInstitutionsForOwnerViaGrpc(w, RequestPayload{Institution: InstPayload{OwnerId: ownerId}})
 }
+
+
+func (app *Config) GetInstitutionById(w http.ResponseWriter, r *http.Request) {
+	var requestPayload RequestPayload
+	instId, err := app.readIntParam(r, "instId")
+	if err != nil {
+		app.errorJson(w, err)
+		return
+	}
+	requestPayload.Institution.Id = instId
+
+	app.GetInstitutionViaGRpc(w, requestPayload)
+}

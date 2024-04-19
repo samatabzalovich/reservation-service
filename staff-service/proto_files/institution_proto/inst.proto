@@ -99,6 +99,8 @@ service InstitutionService {
     rpc DeleteInstitution(DeleteInstitutionRequest) returns (DeleteInstitutionResponse) {}
     rpc SearchInstitutions(SearchInstitutionsRequest) returns (InstitutionsResponse) {}
     rpc GetForToken(GetInstForTokenRequest) returns (Institution) {}
+    rpc GetInstitutionsForOwner(GetInstitutionsByIdRequest) returns (InstitutionsResponse) {}
+    rpc GetInstitutionForEmployee(GetInstitutionsByIdRequest) returns (Institution) {}
 }
 
 service CategoryService {

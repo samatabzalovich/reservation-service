@@ -14,7 +14,7 @@ func (app *Config) contextSetUser(ctx context.Context,user *AuthPayload) *contex
 	return &newCtx
 }
 
-func (app *CategoryService) contextGetUser(ctx context.Context) (*AuthPayload, error){
+func contextGetUser(ctx context.Context) (*AuthPayload, error){
 	user, ok := ctx.Value(userContextKey).(*AuthPayload)
 	if !ok {
 		return nil, errors.New("user not found in context")
