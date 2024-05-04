@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 )
 
@@ -17,12 +18,14 @@ type JoinRoomReq struct {
 func (app *Config) JoinRegisterEmployeeRoom(w http.ResponseWriter, r *http.Request) {
 	var req JoinRoomReq
 	id, err := app.readStringParam(r, "token")
+	log.Println("Token id: ", id)
 	if err != nil {
 		app.errorJson(w, err, http.StatusForbidden)
 		return
 	}
 	req.RoomID = id
 	inst, err := app.GetInstitutionForToken(req.RoomID)
+	log.Println("Institution: ", inst)
 	if err != nil {
 		app.errorJson(w, err, http.StatusForbidden)
 		return

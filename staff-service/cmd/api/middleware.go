@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 	"staff-service/internal/data"
 	"strings"
@@ -24,10 +25,11 @@ func (app *Config) requireActivatedUser(next http.Handler) http.Handler {
 
 func (app *Config) requireAuthentication(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		
 		w.Header().Add("Vary", "Authorization")
 
 		authorizationHeader := r.Header.Get("Authorization")
-
+		log.Println("Authorization header: ", authorizationHeader)
 		if authorizationHeader == "" {
 			app.errorJson(w, ErrAuthentication, http.StatusUnauthorized)
 			return
@@ -40,6 +42,8 @@ func (app *Config) requireAuthentication(next http.Handler) http.Handler {
 		}
 
 		token := headerParts[1]
+
+		log.Println("Token: ", token)
 
 		user, err := app.AuthenticateViaGrpc(token)
 		if err != nil {

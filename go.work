@@ -7,4 +7,6 @@ use (
 	./institution-service
 	./staff-service
 	./notification-service
+	./client-engagemant-service
+	./queue-managemant-service
 )

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"institution-service/internal/validator"
+	"log"
 	"time"
 
 	"github.com/jackc/pgx"
@@ -376,6 +377,7 @@ func (m InstitutionModel) GetForToken(tokenScope, tokenPlaintext string) (*Insti
 	defer cancel()
 	var institution Institution
 	err := m.DB.QueryRowContext(ctx, query, tokenHash[:], tokenScope, time.Now()).Scan(&institution.ID, &institution.Name, &institution.Description, &institution.Website, &institution.OwnerId, &institution.Latitude, &institution.Longitude, &institution.Address, &institution.Phone, &institution.Country, &institution.City)
+	log.Println("query with args: ", query, tokenHash[:], tokenScope, time.Now())
 	if err != nil {
 		return nil, err
 	}
@@ -471,3 +473,5 @@ func (m InstitutionModel) GetForEmployee(employeeId int64) (*Institution, error)
 	}
 	return &institution, nil
 }
+
+

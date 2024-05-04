@@ -117,7 +117,7 @@ build_proto:
 ## Migration paths
 DSN := postgres://postgres:190704Samat@localhost/reserveHub?sslmode=disable
 DIR_MIGRATIONS := ../migrations
-NAME := alter_table_appointments_new_column
+NAME := create_queue_table
 
 migrate_up:
 	@echo "Migrating up..."

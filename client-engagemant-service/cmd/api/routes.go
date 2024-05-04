@@ -1,0 +1,70 @@
+package main
+
+import (
+	"net/http"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
+)
+
+func (app *Config) routes() http.Handler {
+	mux := chi.NewRouter()
+
+	// specify who is allowed to connect
+	mux.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"https://*", "http://*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: true,
+		MaxAge:           300,
+	}))
+	mux.Use(middleware.Heartbeat("/ping"))
+	mux.Route("/comment", func(r chi.Router) {
+		r.Use(app.requireAuthentication)
+		r.Use(app.requireActivatedUser)
+		r.Post("/", app.LeaveComment)
+		r.Get("/institution/{id}", app.GetCommentsForInstitution)
+		r.Get("/{id}", app.GetComment)
+		r.Get("/user/{id}", app.GetCommentsForUser)
+		r.Put("/", app.UpdateComment)
+		r.Delete("/{id}", app.DeleteComment)
+		r.Delete("/institution/{id}", app.DeleteCommentsForInstitution)
+		r.Delete("/user/{id}", app.DeleteCommentsForUser)
+	})
+
+	mux.Route("/rating", func(r chi.Router) {
+		r.Use(app.requireAuthentication)
+		r.Use(app.requireActivatedUser)
+		//TODO: r.use check for appointment
+		r.Post("/", app.LeaveFeedbackForAppointment)
+		r.Get("/feedback-appointment/{id}", app.GetFeedbackForAppointment)
+		r.Get("/employee/{id}", app.GetFeedbacksForEmployee)
+		r.Get("/client/{id}", app.GetFeedbacksForClient)
+		r.Get("/institution/{id}", app.GetFeedbacksForInstitution)
+		r.Put("/", app.UpdateFeedback)
+		r.Delete("/{id}", app.DeleteFeedback)
+	})
+
+	mux.Route("/rating-analytics", func(r chi.Router) {
+		r.Use(app.requireAuthentication)
+		r.Use(app.requireActivatedUser)
+		r.Get("/employee/{id}", app.GetAverageRatingForEmployee)
+		r.Get("/client/{id}", app.GetAverageRatingForClient)
+		r.Get("/institution/{id}", app.GetAverageRatingForInstitution)
+		r.Get("/employee-feedback/{id}", app.GetFeedbacksForEmployee)
+		r.Get("/client-feedback/{id}", app.GetFeedbacksForClient)
+		r.Get("/institution-feedback/{id}", app.GetFeedbacksForInstitution)
+		r.Get("/service/{id}", app.GetAverageRatingForService)
+		r.Get("/appointment/{id}", app.GetAverageRatingForAppointment)
+		r.Get("/employee-service/{employee_id}/{service_id}", app.GetAverageRatingForEmployeeService)
+		r.Get("/client-service/{client_id}/{service_id}", app.GetAverageRatingForClientService)
+		r.Get("/client-institution/{client_id}/{institution_id}", app.GetAverageRatingForClientInstitution)
+		r.Get("/client-employee/{client_id}/{employee_id}", app.GetAverageRatingForClientEmployee)
+	})
+
+
+	mux.NotFound(app.NotFound)
+	return mux
+}

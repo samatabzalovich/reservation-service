@@ -5,6 +5,7 @@ import (
 	"errors"
 	data "institution-service/internal/data"
 	inst "institution-service/proto_files/institution_proto"
+	"log"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -194,11 +195,14 @@ func (instService *InstitutionService) SearchInstitutions(ctx context.Context, r
 
 func (instService *InstitutionService) GetForToken(ctx context.Context, req *inst.GetInstForTokenRequest) (*inst.Institution, error) {
 	token := req.GetToken()
+	log.Println("Token: ", token)
 	if token == "" && len(token) != 26 {
 		return nil, status.Error(codes.InvalidArgument, "invalid token")
 	}
 
 	institution, err := instService.Models.Institutions.GetForToken(data.ScopeEmployeeReg, token)
+	log.Println("Institution: ", institution)
+	log.Println("Error: ", err)
 	if err != nil {
 		return nil, status.Error(codes.Internal, InvalidServerErr)
 	}
