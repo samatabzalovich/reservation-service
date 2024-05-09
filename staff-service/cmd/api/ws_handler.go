@@ -1,14 +1,8 @@
 package main
 
 import (
-	"log"
 	"net/http"
 )
-
-type CreateRoomReq struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-}
 
 type JoinRoomReq struct {
 	RoomID string `json:"roomId"`
@@ -18,21 +12,19 @@ type JoinRoomReq struct {
 func (app *Config) JoinRegisterEmployeeRoom(w http.ResponseWriter, r *http.Request) {
 	var req JoinRoomReq
 	id, err := app.readStringParam(r, "token")
-	log.Println("Token id: ", id)
 	if err != nil {
 		app.errorJson(w, err, http.StatusForbidden)
 		return
 	}
 	req.RoomID = id
 	inst, err := app.GetInstitutionForToken(req.RoomID)
-	log.Println("Institution: ", inst)
 	if err != nil {
 		app.errorJson(w, err, http.StatusForbidden)
 		return
 	}
 
 	// check if room exists
-	_,ok := app.hub.Rooms[req.RoomID]
+	_, ok := app.hub.Rooms[req.RoomID]
 	if !ok {
 		app.hub.Rooms[req.RoomID] = &Room{
 			ID:      req.RoomID,
@@ -58,7 +50,7 @@ func (app *Config) JoinRegisterEmployeeRoom(w http.ResponseWriter, r *http.Reque
 
 	m := &Message{
 		Institution: inst,
-		Status:     "connected",
+		Status:      "connected",
 		RoomID:      req.RoomID,
 		UserID:      user.ID,
 	}

@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"log"
 	"net/http"
 	"staff-service/internal/data"
 	"time"
@@ -9,15 +10,15 @@ import (
 
 func (app *Config) CreateService(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		Name      string `json:"name"`
-		InstID    int64  `json:"inst_id"`
-		Price     int  `json:"price"`
+		Name        string `json:"name"`
+		InstID      int64  `json:"inst_id"`
+		Price       int    `json:"price"`
 		Description string `json:"description"`
-		Duration  string `json:"duration"`
-		PhotoUrl  string `json:"photo_url"`
+		Duration    string `json:"duration"`
+		PhotoUrl    string `json:"photo_url"`
+		ServiceType string `json:"serviceType"`
 	}
 
-	
 	err := app.readJSON(w, r, &input)
 	if err != nil {
 		app.errorJson(w, err, http.StatusBadRequest)
@@ -29,22 +30,21 @@ func (app *Config) CreateService(w http.ResponseWriter, r *http.Request) {
 		app.errorJson(w, err, http.StatusBadRequest)
 		return
 	}
-	service ,err := data.NewService(input.InstID, input.Name, input.Description,input.Price, duration, input.PhotoUrl)
+	service, err := data.NewService(input.InstID, input.Name, input.Description, input.Price, duration, input.PhotoUrl, input.ServiceType)
 
 	if err != nil {
 		app.errorJson(w, err, http.StatusBadRequest)
 		return
 	}
+	log.Println(service.ServiceType)
 
 	err = app.Models.Service.Insert(service)
 	if err != nil {
-		switch err {
-		case data.ErrInvalidInstId:
+		switch {
+		case errors.Is(err, data.ErrInvalidInstId):
 			app.errorJson(w, err, http.StatusBadRequest)
-			
-		case data.ErrInvalidServices:
+		case errors.Is(err, data.ErrInvalidServices):
 			app.errorJson(w, err, http.StatusBadRequest)
-			
 		default:
 			app.errorJson(w, err, http.StatusInternalServerError)
 		}
@@ -84,6 +84,7 @@ func (app *Config) GetService(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		app.errorJson(w, err, http.StatusInternalServerError)
+		return
 	}
 
 	app.writeJSON(w, http.StatusOK, service)

@@ -18,9 +18,8 @@ var (
 	ErrInvalidServiceId   = errors.New("invalid service id")
 	ErrInvalidName        = errors.New("invalid name")
 	ErrInvalidPrice       = errors.New("invalid price")
-	ErrInvalidDuration    = errors.New("invalid duration")
-	ErrInvalidPhotoUrl    = errors.New("invalid photo url")
-	ErrRecordNotFound    = errors.New("record not found")
+	ErrRecordNotFound     = errors.New("record not found")
+	ErrInvalidServiceType = errors.New("invalid service type")
 )
 
 var db *sql.DB
@@ -40,8 +39,8 @@ type Models struct {
 		GetAllForInst(instId int64) ([]*Employee, error)
 		GetById(id int64) (*Employee, error)
 		Update(employee *Employee) error
-		UpdateServices(employee *Employee) error 
-		UpdateSchedule(employee *Employee) error 
+		UpdateServices(employee *Employee) error
+		UpdateSchedule(employee *Employee) error
 		Delete(id int64) error
 		GetEmployeeScheduleAndService(employeeId int64, serviceId int64, selectedDay time.Time) (*TypeForEmployeeTimeSlots, error)
 	}

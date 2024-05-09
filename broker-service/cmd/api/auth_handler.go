@@ -7,7 +7,6 @@ import (
 
 // RequestPayload describes the JSON that this service accepts as an HTTP Post request
 
-
 func (app *Config) Broker(w http.ResponseWriter, r *http.Request) {
 	payload := jsonResponse{
 		Error:   false,
@@ -35,6 +34,8 @@ func (app *Config) HandleAuthSubmission(w http.ResponseWriter, r *http.Request) 
 		app.RegViaGRpc(w, requestPayload)
 	case "verifySms":
 		app.VerifySmsViaGRpc(w, requestPayload)
+	case "deleteAccount":
+		app.DeleteAccountViaGRpc(w, requestPayload)
 	default:
 		app.errorJson(w, errors.New("unknown action"))
 	}

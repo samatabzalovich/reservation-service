@@ -26,7 +26,6 @@ type User struct {
 	Version   int       `json:"-"`
 }
 
-
 func ValidateNumber(v *validator.Validator, number string) {
 	v.Check(number != "", "number", "must be provided")
 	v.Check(validator.Matches(number, validator.PhoneRX), "number", "must be a valid phone number")
@@ -223,4 +222,24 @@ func (m UserModel) GetForToken(tokenScope, tokenPlaintext string) (*User, error)
 	}
 
 	return &user, nil
+}
+
+func (m UserModel) Delete(id int64) error {
+	query := `
+	DELETE FROM users
+	WHERE id = $1`
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	result, err := m.DB.ExecContext(ctx, query, id)
+	if err != nil {
+		return err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return ErrRecordNotFound
+	}
+	return nil
 }

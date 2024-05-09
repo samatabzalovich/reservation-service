@@ -79,5 +79,6 @@ message AuthResponse {
 }
 service AuthService {
   rpc Authenticate(AuthRequest) returns (AuthResponse);
+  rpc DeleteUser(AuthRequest) returns (RegResponse);
 }
 

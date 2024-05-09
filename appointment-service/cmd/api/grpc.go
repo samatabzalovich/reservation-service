@@ -3,6 +3,8 @@ package main
 import (
 	auth "appointment-service/proto_files/auth_proto"
 	"context"
+	"log"
+	"os"
 	"time"
 
 	"google.golang.org/grpc"
@@ -10,7 +12,11 @@ import (
 )
 
 func (app *Config) AuthenticateViaGrpc(token string) (*User, error) {
-	conn, err := grpc.Dial("authentication-service:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	authDest := os.Getenv("AUTH_SERVICE")
+	if authDest == "" {
+		log.Fatal("AUTH_SERVICE env variable is not set")
+	}
+	conn, err := grpc.Dial(authDest, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
 
 		return nil, err

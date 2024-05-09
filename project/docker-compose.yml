@@ -2,6 +2,7 @@ version: '3'
 
 services:
 
+
   broker-service:
     build:
       context: ./../broker-service
@@ -12,6 +13,11 @@ services:
     deploy:
       mode: replicated
       replicas: 1
+    environment:
+      AUTH_SERVICE: "authentication-service:50001"
+      STAFF_SERVICE_HOST_WITHSLASHATTHEEND: "staff-service/"
+      RABBITMQ_HOST: "amqp://guest:guest@rabbitmq"
+      INSTITUTION_SERVICE: "institution-service:50001"
 
 
   authentication-service:
@@ -19,12 +25,16 @@ services:
       context: ./../authentication-service
       dockerfile: ./../authentication-service/authentication-service.dockerfile
     restart: always
+    ports:
+      - "50001:50001"
     deploy:
       mode: replicated
       replicas: 1
     environment:
+      # DSN: "postgres://reservehub:190704Samat@reserve-hub-database.cnwmuwismjtn.us-east-1.rds.amazonaws.com:5432/postgres"
+      # REDIS_ADDR: "reserve-hub-cache-redis.owhyr8.clustercfg.use1.cache.amazonaws.com:6379"
       DSN: "host=postgres port=5432 user=postgres password=190704Samat dbname=reserveHub sslmode=disable timezone=UTC connect_timeout=5"
-
+      REDIS_ADDR: "redis:6379"
   institution-service:
     build:
       context: ./../institution-service
@@ -35,6 +45,7 @@ services:
       replicas: 1
     environment:
       DSN: "host=postgres port=5432 user=postgres password=190704Samat dbname=reserveHub sslmode=disable timezone=UTC connect_timeout=5"
+      AUTH_SERVICE: "authentication-service:50001"
 
   staff-service:
     build:
@@ -48,33 +59,57 @@ services:
       replicas: 1
     environment:
       DSN: "host=postgres port=5432 user=postgres password=190704Samat dbname=reserveHub sslmode=disable timezone=UTC connect_timeout=5"
+      AUTH_SERVICE: "authentication-service:50001"
+      INSTITUTION_SERVICE: "institution-service:50001"
+  appointment-service:
+      build:
+        context: ./../appointment-service
+        dockerfile: ./../appointment-service/appointments.dockerfile
+      restart: always
+      ports:
+        - "8083:80"
+      deploy:
+        mode: replicated
+        replicas: 1
+      environment:
+        DSN: "host=postgres port=5432 user=postgres password=190704Samat dbname=reserveHub sslmode=disable timezone=UTC connect_timeout=5"
+        AUTH_SERVICE: "authentication-service:50001"
+        STAFF_SERVICE_HOST_WITHSLASHATTHEEND: "staff-service/"
+        RABBITMQ_HOST: "amqp://guest:guest@rabbitmq"
 
-  # appointment-service:
-  #   build:
-  #     context: ./../appointment-service
-  #     dockerfile: ./../appointment-service/appointments.dockerfile
-  #   restart: always
-  #   ports:
-  #     - "8083:80"
-  #   deploy:
-  #     mode: replicated
-  #     replicas: 1
-  #   environment:
-  #     DSN: "host=postgres port=5432 user=postgres password=190704Samat dbname=reserveHub sslmode=disable timezone=UTC connect_timeout=5"
+  notification-service:
+      build:
+        context: ./../notification-service
+        dockerfile: ./../notification-service/notification.dockerfile
+      restart: always
+      ports:
+        - "8084:80"
+      deploy:
+        mode: replicated
+        replicas: 1
+      environment:
+        DSN: "host=postgres port=5432 user=postgres password=190704Samat dbname=reserveHub sslmode=disable timezone=UTC connect_timeout=5"
+        host: "https://sendnotification-4nnknk7h2a-uc.a.run.app"
+        RABBITMQ_HOST: "amqp://guest:guest@rabbitmq"
 
-  # notification-service:
-  #   build:
-  #     context: ./../notification-service
-  #     dockerfile: ./../notification-service/notification.dockerfile
-  #   restart: always
-  #   ports:
-  #     - "8084:80"
-  #   deploy:
-  #     mode: replicated
-  #     replicas: 1
-  #   environment:
-  #     DSN: "host=postgres port=5432 user=postgres password=190704Samat dbname=reserveHub sslmode=disable timezone=UTC connect_timeout=5"
-  #     host: "https://sendnotification-4nnknk7h2a-uc.a.run.app"
+  queue-service:
+      build:
+        context: ./../queue-management-service
+        dockerfile: ./../queue-management-service/queue.dockerfile
+      restart: always
+      ports:
+        - "8087:80"
+      deploy:
+        mode: replicated
+        replicas: 1
+      environment:
+        DSN: "host=postgres port=5432 user=postgres password=190704Samat dbname=reserveHub sslmode=disable timezone=UTC connect_timeout=5"
+        REDIS_HOST: "redis"
+        REDIS_PORT: "6379"
+        staff_service_host: "staff-service/"
+        AUTH_SERVICE: "authentication-service:50001"
+        RABBITMQ_HOST: "amqp://guest:guest@rabbitmq"
+
 
 
   postgres:
@@ -92,6 +127,16 @@ services:
     volumes:
       - ./db-data/postgres/:/var/lib/postgresql/data/
 
+  rabbitmq:
+      image: 'rabbitmq:3.9-alpine'
+      ports:
+        - "5672:5672"
+      deploy:
+        mode: replicated
+        replicas: 1
+      volumes:
+        - ./db-data/rabbitmq/:/var/lib/rabbitmq/
+
   redis:
     image: 'redis:7.0-alpine'
     ports:
@@ -103,12 +148,26 @@ services:
     volumes:
       - ./db-data/redis/:/data/
 
-  # rabbitmq:
-  #   image: 'rabbitmq:3.9-alpine'
-  #   ports:
-  #     - "5672:5672"
-  #   deploy:
-  #     mode: replicated
-  #     replicas: 1
-  #   volumes:
-  #     - ./db-data/rabbitmq/:/var/lib/rabbitmq/
+
+
+# docker tag project-broker-service 982796488014.dkr.ecr.us-east-1.amazonaws.com/reserve-hub:latest-1
+# docker tag project-authentication-service 982796488014.dkr.ecr.us-east-1.amazonaws.com/reserve-hub:latest-2
+# docker tag project-institution-service 982796488014.dkr.ecr.us-east-1.amazonaws.com/reserve-hub:latest-3
+# docker tag project-staff-service 982796488014.dkr.ecr.us-east-1.amazonaws.com/reserve-hub:latest-4
+# docker tag project-appointment-service 982796488014.dkr.ecr.us-east-1.amazonaws.com/reserve-hub:latest-5
+# docker tag project-notification-service 982796488014.dkr.ecr.us-east-1.amazonaws.com/reserve-hub:latest-6
+# docker tag project-queue-service 982796488014.dkr.ecr.us-east-1.amazonaws.com/reserve-hub:latest-7
+# docker tag postgres:alpine3.18 982796488014.dkr.ecr.us-east-1.amazonaws.com/reserve-hub:latest-8
+# docker tag rabbitmq:3.9-alpine 982796488014.dkr.ecr.us-east-1.amazonaws.com/reserve-hub:latest-9
+# docker tag redis:7.0-alpine 982796488014.dkr.ecr.us-east-1.amazonaws.com/reserve-hub:latest-10
+
+# docker push 982796488014.dkr.ecr.us-east-1.amazonaws.com/reserve-hub:latest-1
+# docker push 982796488014.dkr.ecr.us-east-1.amazonaws.com/reserve-hub:latest-2
+# docker push 982796488014.dkr.ecr.us-east-1.amazonaws.com/reserve-hub:latest-3
+# docker push 982796488014.dkr.ecr.us-east-1.amazonaws.com/reserve-hub:latest-4
+# docker push 982796488014.dkr.ecr.us-east-1.amazonaws.com/reserve-hub:latest-5
+# docker push 982796488014.dkr.ecr.us-east-1.amazonaws.com/reserve-hub:latest-6
+# docker push 982796488014.dkr.ecr.us-east-1.amazonaws.com/reserve-hub:latest-7
+# docker push 982796488014.dkr.ecr.us-east-1.amazonaws.com/reserve-hub:latest-8
+# docker push 982796488014.dkr.ecr.us-east-1.amazonaws.com/reserve-hub:latest-9
+# docker push 982796488014.dkr.ecr.us-east-1.amazonaws.com/reserve-hub:latest-10

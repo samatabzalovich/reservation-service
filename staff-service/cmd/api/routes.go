@@ -32,15 +32,14 @@ func (app *Config) routes() http.Handler {
 		r.Post("/create", app.CreateEmployee)
 		r.Post("/qr-code", app.CreateQRCodeToken)
 		r.Delete("/delete/{employee_id}", app.DeleteEmployee)
-		r.Group(func (r chi.Router)  {
+		r.Group(func(r chi.Router) {
 			r.Use(app.requireInstOwnerForOwner)
-			r.Put("/update", app.UpdateEmployee) 
+			r.Put("/update", app.UpdateEmployee)
 		})
 		// r.Put("/update-services", app.)
 		// r.Put("/update-schedule", app.)
 	})
 	mux.Route("/ws/joinRegisterEmployeeRoom", func(r chi.Router) {
-
 		r.Use(app.requireAuthentication)
 		r.Use(app.requireActivatedUser)
 		r.Get("/{token}", app.JoinRegisterEmployeeRoom)
@@ -49,10 +48,10 @@ func (app *Config) routes() http.Handler {
 	//mux.Get("/service/{id}", app.GetServiceById)
 	mux.Get("/institution-service/{id}", app.GetServiceForInstitution)
 	mux.Get("/institution-employee/{instId}", app.GetAllEmployeesForInstitution)
-	
+
 	mux.Route("/service", func(r chi.Router) {
-		r.Get("/service/{id}", app.GetService)
-		r.Group(func (r chi.Router) {
+		r.Get("/{id}", app.GetService)
+		r.Group(func(r chi.Router) {
 			r.Use(app.requireAuthentication)
 			r.Use(app.requireActivatedUser)
 			r.Post("/create", app.CreateService) // TODO: add middleware to check if user is owner of institution

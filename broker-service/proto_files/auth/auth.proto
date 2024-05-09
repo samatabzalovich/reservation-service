@@ -13,6 +13,7 @@ message TokenRequest {
   Auth AuthEntry  = 1;
 }
 
+
 message TokenResponse {
   string result = 1;
   User user = 2;
@@ -78,4 +79,6 @@ message AuthResponse {
 }
 service AuthService {
   rpc Authenticate(AuthRequest) returns (AuthResponse);
+  rpc DeleteUser(AuthRequest) returns (RegResponse);
 }
+

@@ -8,5 +8,5 @@ use (
 	./staff-service
 	./notification-service
 	./client-engagemant-service
-	./queue-managemant-service
+	./queue-management-service
 )

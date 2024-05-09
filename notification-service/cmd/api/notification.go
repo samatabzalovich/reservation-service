@@ -7,9 +7,7 @@ import (
 	"net/http"
 )
 
-
 func (app *Config) sendRequest(requestBody RequestBody) bool {
-
 
 	jsonData, err := json.Marshal(requestBody)
 	if err != nil {
@@ -22,6 +20,5 @@ func (app *Config) sendRequest(requestBody RequestBody) bool {
 	}
 	defer resp.Body.Close()
 
-	
 	return true
 }

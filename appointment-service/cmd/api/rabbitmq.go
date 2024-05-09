@@ -4,12 +4,17 @@ import (
 	"appointment-service/internal/data"
 	"encoding/json"
 	"log"
+	"os"
 
 	"github.com/streadway/amqp"
 )
 
 func (app *Config) InitNotificationSender() error {
-	conn, err := amqp.Dial("amqp://guest:guest@rabbitmq")
+	rabbitMQHOST := os.Getenv("RABBITMQ_HOST")
+	if rabbitMQHOST == "" {
+		log.Fatal("RABBITMQ_HOST env variable is not set")
+	}
+	conn, err := amqp.Dial(rabbitMQHOST)
 	if err != nil {
 		return err
 	}

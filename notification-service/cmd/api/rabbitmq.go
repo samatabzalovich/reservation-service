@@ -5,12 +5,17 @@ import (
 	"fmt"
 	"log"
 	"notification-service/internal/data"
+	"os"
 
 	"github.com/streadway/amqp"
 )
 
 func (app *Config) ListenForAppointmentNotificationRequests() {
-	conn, err := amqp.Dial("amqp://guest:guest@rabbitmq")
+	rabbitMQHost := os.Getenv("RABBITMQ_HOST")
+	if rabbitMQHost == "" {
+		log.Fatalf("RABBITMQ_HOST env variable not set")
+	}
+	conn, err := amqp.Dial(rabbitMQHost)
 	if err != nil {
 		log.Fatalf("Error occurred connecting to RabbitMQ. Err: %s", err)
 	}

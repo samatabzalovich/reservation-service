@@ -11,7 +11,7 @@ import (
 
 func (app *Config) CreateTokenViaGRpc(w http.ResponseWriter, r RequestPayload) {
 
-	conn, err := grpc.Dial("authentication-service:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	conn, err := grpc.Dial(app.authServiceHost, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
 		app.rpcErrorJson(w, err)
 		return
@@ -46,7 +46,7 @@ func (app *Config) CreateTokenViaGRpc(w http.ResponseWriter, r RequestPayload) {
 }
 
 func (app *Config) RegViaGRpc(w http.ResponseWriter, r RequestPayload) {
-	conn, err := grpc.Dial("authentication-service:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	conn, err := grpc.Dial(app.authServiceHost, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
 		app.rpcErrorJson(w, err)
 		return
@@ -80,7 +80,7 @@ func (app *Config) RegViaGRpc(w http.ResponseWriter, r RequestPayload) {
 }
 
 func (app *Config) AuthViaGRpc(w http.ResponseWriter, r RequestPayload) {
-	conn, err := grpc.Dial("authentication-service:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	conn, err := grpc.Dial(app.authServiceHost, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
 		app.rpcErrorJson(w, err)
 		return
@@ -105,7 +105,7 @@ func (app *Config) AuthViaGRpc(w http.ResponseWriter, r RequestPayload) {
 }
 
 func (app *Config) VerifySmsViaGRpc(w http.ResponseWriter, r RequestPayload) {
-	conn, err := grpc.Dial("authentication-service:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	conn, err := grpc.Dial(app.authServiceHost, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
 		app.rpcErrorJson(w, err)
 		return
@@ -127,4 +127,31 @@ func (app *Config) VerifySmsViaGRpc(w http.ResponseWriter, r RequestPayload) {
 	}
 
 	app.writeJSON(w, http.StatusAccepted, map[string]any{"token": res.Result, "user": res.User, "error": false})
+}
+
+
+
+func (app *Config) DeleteAccountViaGRpc(w http.ResponseWriter, r RequestPayload) {
+	conn, err := grpc.Dial(app.authServiceHost, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	if err != nil {
+		app.rpcErrorJson(w, err)
+		return
+	}
+	defer conn.Close()
+
+	c := auth.NewAuthServiceClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	res, err := c.DeleteUser(ctx, &auth.AuthRequest{
+		TokenEntry: &auth.Token{
+			Token: r.Token.Bearer,
+		},
+	})
+	if err != nil {
+		app.rpcErrorJson(w, err)
+		return
+	}
+
+	app.writeJSON(w, http.StatusAccepted, map[string]any{"message": res.Result, "error": false})
 }

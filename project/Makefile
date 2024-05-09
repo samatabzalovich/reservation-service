@@ -5,6 +5,7 @@ INSTITUTION_BINARY=instApp
 STAFF_BINARY=staffApp
 APPOINTMENT_BINARY=appointmentApp
 NOTIFICATION_BINARY=notificationApp
+QUEUE_BINARY=queueApp
 
 ## up: starts all containers in the background without forcing build
 up:
@@ -13,7 +14,7 @@ up:
 	@echo "Docker images started!"
 #build_logger build_mail build_listener build_product
 ## up_build: stops docker-compose (if running), builds all projects and starts docker compose
-up_build: build_broker build_auth build_inst build_staff build_appointment build_notify
+up_build: build_broker build_auth build_inst build_staff build_appointment build_notify build_queue
 	@echo "Stopping docker images (if running...)"
 	docker-compose down
 	@echo "Building (when required) and starting docker images..."
@@ -57,6 +58,11 @@ build_appointment:
 build_notify:
 	@echo "Building notification binary..."
 	cd ../notification-service && env GOOS=linux CGO_ENABLED=0 go build -o ${NOTIFICATION_BINARY} ./cmd/api
+	@echo "Done!"
+
+build_queue:
+	@echo "Building queue binary..."
+	cd ../queue-management-service && env GOOS=linux CGO_ENABLED=0 go build -o ${QUEUE_BINARY} ./cmd/api
 	@echo "Done!"
 
 AUTH_PROTO_DIR := ../authentication-service/auth_proto
@@ -115,7 +121,7 @@ build_proto:
 
 
 ## Migration paths
-DSN := postgres://postgres:190704Samat@localhost/reserveHub?sslmode=disable
+DSN := postgres://reservehub:190704Samat@reserve-hub-database.cnwmuwismjtn.us-east-1.rds.amazonaws.com:5432/postgres
 DIR_MIGRATIONS := ../migrations
 NAME := create_queue_table
 

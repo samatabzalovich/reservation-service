@@ -7,6 +7,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"log"
 	"time"
 
 	"google.golang.org/grpc/codes"
@@ -77,7 +78,6 @@ func (authServer *AuthService) Register(ctx context.Context, req *auth.RegReques
 		Type     string `json:"type"`
 	}
 
-	
 	userInput.UserName = input.UserName
 	userInput.Number = input.PhoneNumber
 	userInput.Password = input.Password
@@ -92,7 +92,6 @@ func (authServer *AuthService) Register(ctx context.Context, req *auth.RegReques
 		res := &auth.RegResponse{Result: "admin cannot be created"}
 		return res, status.Error(codes.InvalidArgument, "admin cannot be created")
 	}
-
 
 	err := newUser.Password.Set(input.Password)
 	if err != nil {
@@ -172,11 +171,14 @@ func (authServer *AuthService) ActivateUser(ctx context.Context, req *auth.SmsRe
 	}
 	exist, err := authServer.Models.Users.GetByNumber(input.PhoneNumber)
 	if err != nil {
+
+		log.Println(err)
 		if errors.Is(err, sql.ErrNoRows) {
 			res := &auth.TokenResponse{Result: "phone number is incorrect!"}
 			return res, status.Error(codes.InvalidArgument, "phone number is incorrect!")
 		} else {
 			res := &auth.TokenResponse{Result: "failed"}
+			log.Println(err)
 			return res, status.Error(codes.Internal, InternalServerErr)
 		}
 	}
@@ -208,15 +210,50 @@ func (authServer *AuthService) ActivateUser(ctx context.Context, req *auth.SmsRe
 		_, err := authServer.Models.Users.ActivateUser(input.PhoneNumber)
 		if err != nil {
 			res := &auth.TokenResponse{Result: "error"}
+			log.Println(err)
 			return res, status.Error(codes.Internal, InternalServerErr)
 		}
 		token, err := authServer.Models.Tokens.New(exist.ID, 24*time.Hour, data2.ScopeAuthentication, 0)
 		if err != nil {
 			res := &auth.TokenResponse{Result: InternalServerErr}
+			log.Println(err)
 			return res, status.Error(codes.Internal, InternalServerErr)
 		}
 		// return response
 		res := &auth.TokenResponse{Result: token.Plaintext, User: &auth.User{UserName: exist.UserName, Type: exist.Type, Id: exist.ID, Activated: true}}
 		return res, nil
 	}
+}
+
+func (authServer *AuthService) DeleteUser(ctx context.Context, req *auth.AuthRequest) (*auth.RegResponse, error) {
+	input := req.GetTokenEntry()
+
+	if input.Token == "" {
+		res := &auth.RegResponse{Result: "token is empty"}
+		return res, status.Error(codes.InvalidArgument, "token is empty")
+	}
+	v := validator.New()
+	if data2.ValidateTokenPlaintext(v, input.Token); !v.Valid() {
+		res := &auth.RegResponse{Result: "token is not valid"}
+		return res, status.Error(codes.InvalidArgument, "token is not valid")
+	}
+
+	user, err := authServer.Models.Users.GetForToken(data2.ScopeAuthentication, input.Token)
+	if err != nil {
+		switch {
+		case errors.Is(err, data2.ErrRecordNotFound):
+			res := &auth.RegResponse{Result: "token is not valid"}
+			return res, status.Error(codes.Unauthenticated, "user not found")
+		default:
+			res := &auth.RegResponse{Result: "internal"}
+			return res, status.Error(codes.Internal, InternalServerErr)
+		}
+	}
+	err = authServer.Models.Users.Delete(user.ID)
+	if err != nil {
+		res := &auth.RegResponse{Result: "internal"}
+		return res, status.Error(codes.Internal, InternalServerErr)
+	}
+	res := &auth.RegResponse{Result: "user deleted"}
+	return res, nil
 }

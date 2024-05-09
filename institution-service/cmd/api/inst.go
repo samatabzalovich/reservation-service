@@ -21,13 +21,16 @@ func (instService *InstitutionService) CreateInstitution(ctx context.Context, re
 	if workHours == nil {
 		return &inst.CreateInstitutionResponse{Id: 0}, status.Error(codes.InvalidArgument, data.ErrInvalidWorkingHours.Error())
 	}
-
+	owner, err := contextGetUser(ctx)
+	if err != nil {
+		return &inst.CreateInstitutionResponse{Id: 0}, status.Error(codes.Unauthenticated, err.Error())
+	}
 	institution, err := data.NewInstitution(
 		1,
 		req.GetInstitution().Name,
 		req.GetInstitution().Description,
 		req.GetInstitution().Website,
-		req.GetInstitution().OwnerId,
+		owner.UserId,
 		req.GetInstitution().Latitude,
 		req.GetInstitution().Longitude,
 		req.GetInstitution().Country,
@@ -126,7 +129,7 @@ func (instService *InstitutionService) UpdateInstitution(ctx context.Context, re
 	return &inst.UpdateInstitutionResponse{Id: req.Institution.Id}, nil
 }
 
-func (instService *InstitutionService) CheckIfUserOwnerOfInstitution(user *AuthPayload, instId int64) (bool,error) {
+func (instService *InstitutionService) CheckIfUserOwnerOfInstitution(user *AuthPayload, instId int64) (bool, error) {
 	institution, err := instService.Models.Institutions.GetById(instId)
 	if err != nil {
 		return false, status.Error(codes.InvalidArgument, data.ErrRecordNotFound.Error())

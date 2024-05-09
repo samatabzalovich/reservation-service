@@ -369,17 +369,23 @@ func (m InstitutionModel) GetForToken(tokenScope, tokenPlaintext string) (*Insti
 	tokenHash := sha256.Sum256([]byte(tokenPlaintext))
 	query := `SELECT i.id, i.name, i.description, i.website, i.owner_id, i.latitude, i.longitude, i.address, i.phone, i.country, i.city
 	FROM institution i
-	JOIN tokens t ON i.owner_id = t.user_id
-	WHERE t.hash = $1
-	AND t.scope = $2
-	AND t.expiry > $3`
+	JOIN tokens ON i.owner_id = tokens.user_id
+	WHERE tokens.hash = $1
+	AND tokens.scope = $2
+	AND tokens.expiry > $3`
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	var institution Institution
 	err := m.DB.QueryRowContext(ctx, query, tokenHash[:], tokenScope, time.Now()).Scan(&institution.ID, &institution.Name, &institution.Description, &institution.Website, &institution.OwnerId, &institution.Latitude, &institution.Longitude, &institution.Address, &institution.Phone, &institution.Country, &institution.City)
 	log.Println("query with args: ", query, tokenHash[:], tokenScope, time.Now())
+	log.Println("institution: ", institution)
 	if err != nil {
-		return nil, err
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrRecordNotFound
+		default:
+			return nil, err
+		}
 	}
 	return &institution, nil
 }
@@ -473,5 +479,3 @@ func (m InstitutionModel) GetForEmployee(employeeId int64) (*Institution, error)
 	}
 	return &institution, nil
 }
-
-

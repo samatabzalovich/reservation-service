@@ -12,13 +12,11 @@ import (
 )
 
 func (app *Config) AuthenticateViaGrpc(token string) (*User, error) {
-	conn, err := grpc.Dial("authentication-service:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	conn, err := grpc.Dial(app.authServiceHost, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
-
 		return nil, err
 	}
 	defer conn.Close()
-
 	c := auth.NewAuthServiceClient(conn)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
@@ -39,7 +37,7 @@ func (app *Config) AuthenticateViaGrpc(token string) (*User, error) {
 }
 
 func (app *Config) SetEmployeeRegTokenViaGrpc(ownerId, instId int64) (string, error) {
-	conn, err := grpc.Dial("authentication-service:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	conn, err := grpc.Dial(app.authServiceHost, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
 		return "", err
 	}
@@ -60,7 +58,7 @@ func (app *Config) SetEmployeeRegTokenViaGrpc(ownerId, instId int64) (string, er
 }
 
 func (app *Config) GetInstitutionForToken(token string) (*inst.Institution, error) {
-	conn, err := grpc.Dial("institution-service:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	conn, err := grpc.Dial(app.instServiceHost, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
 		return nil, err
 	}
@@ -73,6 +71,7 @@ func (app *Config) GetInstitutionForToken(token string) (*inst.Institution, erro
 	res, err := c.GetForToken(ctx, &inst.GetInstForTokenRequest{
 		Token: token,
 	})
+
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +79,7 @@ func (app *Config) GetInstitutionForToken(token string) (*inst.Institution, erro
 }
 
 func (app *Config) GetInstitutions(token string) (*inst.Institution, error) {
-	conn, err := grpc.Dial("institution-service:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	conn, err := grpc.Dial(app.instServiceHost, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +99,7 @@ func (app *Config) GetInstitutions(token string) (*inst.Institution, error) {
 }
 
 func (app *Config) GetInstitution(instId int64) (*inst.Institution, error) {
-	conn, err := grpc.Dial("institution-service:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	conn, err := grpc.Dial(app.instServiceHost, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +119,7 @@ func (app *Config) GetInstitution(instId int64) (*inst.Institution, error) {
 }
 
 func (app *Config) GetInstitutionForEmployee(employeeId int64) (*inst.Institution, error) {
-	conn, err := grpc.Dial("institution-service:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	conn, err := grpc.Dial(app.instServiceHost, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
 		return nil, err
 	}

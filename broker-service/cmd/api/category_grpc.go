@@ -11,7 +11,7 @@ import (
 )
 
 func (app *Config) GetCategoriesViaGRpc(w http.ResponseWriter) {
-	conn, err := grpc.Dial("institution-service:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	conn, err := grpc.Dial(app.instHost, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
 		app.rpcErrorJson(w, err)
 		return
@@ -36,7 +36,7 @@ func (app *Config) GetCategoriesViaGRpc(w http.ResponseWriter) {
 }
 
 func (app *Config) CreateCategoryViaGRpc(w http.ResponseWriter, ctx context.Context, requestPayload RequestPayload) {
-	conn, err := grpc.Dial("institution-service:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	conn, err := grpc.Dial(app.instHost, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
 		app.rpcErrorJson(w, err)
 		return

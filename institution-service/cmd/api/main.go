@@ -6,6 +6,7 @@ import (
 	inst "institution-service/proto_files/institution_proto"
 	"log"
 	"net"
+	"os"
 
 	_ "github.com/jackc/pgconn"
 	_ "github.com/jackc/pgx"
@@ -19,16 +20,22 @@ var counts int64
 
 type Config struct {
 	Models data.Models
+	authServiceHost string
 }
 
 func main() {
 	log.Println("Starting institution service")
+	authHost := os.Getenv("AUTH_SERVICE")
+	if authHost == "" {
+		log.Fatal("AUTH_SERVICE env variable is not set")
+	}
 	dbConn := connectToDB()
 	if dbConn == nil {
 		log.Panic("Can't connect to Postgres!")
 	}
 	app := &Config{
 		Models: data.New(dbConn),
+		authServiceHost: authHost,
 	}
 	app.grpcListen()
 }

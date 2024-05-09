@@ -11,7 +11,7 @@ import (
 )
 
 func (app *Config) CreateInstitutionViaGRpc(w http.ResponseWriter, ctx context.Context, requestPayload RequestPayload) {
-	conn, err := grpc.Dial("institution-service:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	conn, err := grpc.Dial(app.instHost, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
 		app.rpcErrorJson(w, err)
 		return
@@ -51,7 +51,7 @@ func (app *Config) CreateInstitutionViaGRpc(w http.ResponseWriter, ctx context.C
 }
 
 func (app *Config) UpdateInstitutionViaGRpc(w http.ResponseWriter, ctx context.Context, requestPayload RequestPayload) {
-	conn, err := grpc.Dial("institution-service:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	conn, err := grpc.Dial(app.instHost, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
 		app.rpcErrorJson(w, err)
 		return
@@ -92,7 +92,7 @@ func (app *Config) UpdateInstitutionViaGRpc(w http.ResponseWriter, ctx context.C
 }
 
 func (app *Config) DeleteInstitutionViaGRpc(w http.ResponseWriter, ctx context.Context, requestPayload RequestPayload) {
-	conn, err := grpc.Dial("institution-service:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	conn, err := grpc.Dial(app.instHost, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
 		app.rpcErrorJson(w, err)
 		return
@@ -119,7 +119,7 @@ func (app *Config) DeleteInstitutionViaGRpc(w http.ResponseWriter, ctx context.C
 }
 
 func (app *Config) GetInstitutionViaGRpc(w http.ResponseWriter, requestPayload RequestPayload) {
-	conn, err := grpc.Dial("institution-service:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	conn, err := grpc.Dial(app.instHost, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
 		app.rpcErrorJson(w, err)
 		return
@@ -146,7 +146,7 @@ func (app *Config) GetInstitutionViaGRpc(w http.ResponseWriter, requestPayload R
 }
 
 func (app *Config) GetInstitutionsForOwnerViaGrpc(w http.ResponseWriter, requestPayload RequestPayload) {
-	conn, err := grpc.Dial("institution-service:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	conn, err := grpc.Dial(app.instHost, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
 		app.rpcErrorJson(w, err)
 		return
@@ -174,7 +174,7 @@ func (app *Config) GetInstitutionsForOwnerViaGrpc(w http.ResponseWriter, request
 }
 
 func (app *Config) SearchInstitutionsViaGRpc(w http.ResponseWriter, filterPayload FilterPayload) {
-	conn, err := grpc.Dial("institution-service:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	conn, err := grpc.Dial(app.instHost, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
 		app.rpcErrorJson(w, err)
 		return

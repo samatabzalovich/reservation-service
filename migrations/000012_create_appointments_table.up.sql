@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS appointments (
                                               id BIGSERIAL PRIMARY KEY,
-                                              institution_id BIGINT REFERENCES institution(id),
+                                              institution_id BIGINT REFERENCES institution(id) on DELETE  CASCADE ,
                                               employee_id BIGINT REFERENCES employee(id),
                                               service_id BIGINT REFERENCES services(id),
                                               user_id BIGINT REFERENCES users(id),

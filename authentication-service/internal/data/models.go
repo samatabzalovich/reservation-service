@@ -34,6 +34,7 @@ type Models struct {
 		Update(user *User) error
 		GetForToken(tokenScope, tokenPlaintext string) (*User, error)
 		ActivateUser(number string) (int64, error)
+		Delete(id int64) error
 	}
 	Tokens interface {
 		DeleteAllForUser(scope string, userID int64) error

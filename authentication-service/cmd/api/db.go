@@ -47,8 +47,9 @@ func connectToDB() *sql.DB {
 }
 
 func openRedisConn() *redis.Client {
+	redisAddr := os.Getenv("REDIS_ADDR")
 	client := redis.NewClient(&redis.Options{
-		Addr:     "redis:6379",
+		Addr:     redisAddr,
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})

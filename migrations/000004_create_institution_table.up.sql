@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS institution(
     name VARCHAR(50)NOT NULL,
     description TEXT NOT NULL,
     website TEXT NOT NULL,
-    owner_id BIGINT REFERENCES users(id)NOT NULL,
+    owner_id BIGINT REFERENCES users(id) ON DELETE cascade NOT NULL ,
     latitude VARCHAR(50)NOT NULL,
     longitude VARCHAR(50)NOT NULL,
     address VARCHAR(100)NOT NULL,

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	_ "github.com/jackc/pgconn"
 	_ "github.com/jackc/pgx"
@@ -24,10 +25,14 @@ type Config struct {
 
 func main() {
 	db := connectToDB()
+	staffServiceHost := os.Getenv("STAFF_SERVICE_HOST_WITHSLASHATTHEEND")
+	if staffServiceHost == "" {
+		log.Fatal("STAFF_SERVICE_HOST_WITHSLASHATTHEEND env variable is not set")
+	}
 	app := Config{
 		port: "80",
 		Models: data.New(db),
-		staffServiceHost: "staff-service/",
+		staffServiceHost: staffServiceHost,
 	}
 	
 	err  := app.InitNotificationSender()
