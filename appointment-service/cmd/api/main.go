@@ -30,7 +30,7 @@ func main() {
 		log.Fatal("STAFF_SERVICE_HOST_WITHSLASHATTHEEND env variable is not set")
 	}
 	app := Config{
-		port: "80",
+		port: "8083",
 		Models: data.New(db),
 		staffServiceHost: staffServiceHost,
 	}

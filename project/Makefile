@@ -7,6 +7,9 @@ APPOINTMENT_BINARY=appointmentApp
 NOTIFICATION_BINARY=notificationApp
 QUEUE_BINARY=queueApp
 
+
+build_only: build_broker build_auth build_inst build_staff build_appointment build_notify build_queue
+
 ## up: starts all containers in the background without forcing build
 up:
 	@echo "Starting Docker images..."

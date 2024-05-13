@@ -26,8 +26,9 @@ func main() {
 	}
 
 	app := Config{
-		port: "80",
+		port: "8080",
 		authServiceHost: authHost,
+		instHost: instHost,
 	}
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%s", app.port),

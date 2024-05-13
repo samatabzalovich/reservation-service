@@ -6,6 +6,7 @@ import (
 	inst "institution-service/proto_files/institution_proto"
 	"log"
 	"net"
+	"net/http"
 	"os"
 
 	_ "github.com/jackc/pgconn"
@@ -14,12 +15,12 @@ import (
 	"google.golang.org/grpc"
 )
 
-const grpcPort = "50001" // TODO: change to 50001 when production
+const grpcPort = "50002" 
 
 var counts int64
 
 type Config struct {
-	Models data.Models
+	Models          data.Models
 	authServiceHost string
 }
 
@@ -34,9 +35,21 @@ func main() {
 		log.Panic("Can't connect to Postgres!")
 	}
 	app := &Config{
-		Models: data.New(dbConn),
+		Models:          data.New(dbConn),
 		authServiceHost: authHost,
 	}
+	http.HandleFunc("/health", app.HealthCheck)
+
+	// start http server
+	go func() {
+		port := os.Getenv("PORT")
+		if port == "" {
+			port = "8091"
+		}
+		log.Println("Starting HTTP health check server on port ", port)
+		
+		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), nil))
+	}()
 	app.grpcListen()
 }
 

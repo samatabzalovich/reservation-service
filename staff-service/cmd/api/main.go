@@ -41,7 +41,7 @@ func main() {
 	}
 	db := connectToDB()
 	app := Config{
-		port:            "80",
+		port:            "8082",
 		upgrader:        upgrader,
 		broadcast:       make(chan Message),
 		hub:             NewHub(),

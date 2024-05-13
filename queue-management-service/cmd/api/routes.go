@@ -21,6 +21,7 @@ func (app *Config) routes() http.Handler {
 		MaxAge:           300,
 	}))
 	mux.Use(middleware.Heartbeat("/ping"))
+	mux.Get("/health", app.HealthCheck)
 	mux.Route("/queue", func(r chi.Router) {
 		r.Use(app.requireAuthentication)
 		r.Use(app.requireActivatedUser)

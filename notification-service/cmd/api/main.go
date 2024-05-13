@@ -37,7 +37,7 @@ func main() {
 	app := &Config{
 		NotificationServiceHost: os.Getenv("host"),
 		Models:                  data.New(db),
-		port: "80",
+		port: "8084",
 	}
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%s", app.port),

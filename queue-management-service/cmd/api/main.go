@@ -43,7 +43,7 @@ func main() {
 		},
 	}
 	app := Config{
-		port:             "80",
+		port:             "8087",
 		Models:           data.New(db),
 		staffServiceHost: os.Getenv("staff_service_host"),
 		Redis:            openRedisConn(),

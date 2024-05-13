@@ -22,6 +22,7 @@ func (app *Config) routes() http.Handler {
 		MaxAge:           300,
 	}))
 	mux.Use(middleware.Heartbeat("/ping"))
+	mux.Get("/health", app.HealthCheck)
 	mux.Route("/notification", func(r chi.Router) {
 		r.Post("/device-token", app.Insert)
 		r.Get("/device-token/{token}", app.GetByToken)

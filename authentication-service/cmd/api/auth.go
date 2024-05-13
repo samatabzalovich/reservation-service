@@ -5,7 +5,6 @@ import (
 	data2 "authentication-service/internal/data"
 	"authentication-service/internal/validator"
 	"context"
-	"database/sql"
 	"errors"
 	"log"
 	"time"
@@ -171,11 +170,9 @@ func (authServer *AuthService) ActivateUser(ctx context.Context, req *auth.SmsRe
 	}
 	exist, err := authServer.Models.Users.GetByNumber(input.PhoneNumber)
 	if err != nil {
-
-		log.Println(err)
-		if errors.Is(err, sql.ErrNoRows) {
-			res := &auth.TokenResponse{Result: "phone number is incorrect!"}
-			return res, status.Error(codes.InvalidArgument, "phone number is incorrect!")
+		if errors.Is(err, data2.ErrRecordNotFound) {
+			res := &auth.TokenResponse{Result: data2.ErrRecordNotFound.Error()}
+			return res, status.Error(codes.InvalidArgument, data2.ErrRecordNotFound.Error())
 		} else {
 			res := &auth.TokenResponse{Result: "failed"}
 			log.Println(err)

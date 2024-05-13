@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"net/http"
 	"os"
 
 	"github.com/redis/go-redis/v9"
@@ -44,8 +45,19 @@ func main() {
 		Redis:  openRedisConn(),
 	}
 
-	app.grpcListen()
+	http.HandleFunc("/health", app.HealthCheck)
 
+	// start http server
+	go func() {
+		port := os.Getenv("PORT")
+		if port == "" {
+			port = "8090"
+		}
+		log.Println("Starting HTTP health check server on port ", port)
+		
+		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), nil))
+	}()
+	app.grpcListen()
 }
 
 func (app *Config) grpcListen() {
