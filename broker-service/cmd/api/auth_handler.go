@@ -36,6 +36,8 @@ func (app *Config) HandleAuthSubmission(w http.ResponseWriter, r *http.Request) 
 		app.VerifySmsViaGRpc(w, requestPayload)
 	case "deleteAccount":
 		app.DeleteAccountViaGRpc(w, requestPayload)
+	case "sendSms":
+		app.SendSmsViaGRpc(w, requestPayload)
 	default:
 		app.errorJson(w, errors.New("unknown action"))
 	}

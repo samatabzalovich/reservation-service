@@ -272,3 +272,28 @@ func (instService *InstitutionService) GetInstitutionForEmployee(ctx context.Con
 		OwnerId: institution.OwnerId,
 	}, nil
 }
+
+func (instService *InstitutionService) GetInstitutionsForUserEmployee(ctx context.Context, req *inst.GetInstitutionsByIdRequest) (*inst.InstitutionsResponse, error) {
+	institutions, err := instService.Models.Institutions.GetForUserEmployee(req.GetId())
+	if err != nil {
+		return nil, status.Error(codes.Internal, InvalidServerErr)
+	}
+	var institutionsResponse []*inst.Institution
+	for _, institution := range institutions {
+		institutionsResponse = append(institutionsResponse, &inst.Institution{
+			Id:           institution.ID,
+			Name:         institution.Name,
+			Description:  institution.Description,
+			Website:      institution.Website,
+			OwnerId:      institution.OwnerId,
+			Latitude:     institution.Latitude,
+			Longitude:    institution.Longitude,
+			Address:      institution.Address,
+			Phone:        institution.Phone,
+			Country:      institution.Country,
+			City:         institution.City,
+			Categories:   institution.Categories,
+		})
+	}
+	return &inst.InstitutionsResponse{Institution: institutionsResponse}, nil
+}

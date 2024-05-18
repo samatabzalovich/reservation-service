@@ -2,6 +2,7 @@ package main
 
 import (
 	"client-engagemant-service/internal/data"
+	"errors"
 	"net/http"
 )
 
@@ -10,9 +11,9 @@ func (app *Config) LeaveFeedbackForAppointment(w http.ResponseWriter, r *http.Re
 		AppointmentId int64  `json:"appointment_id"`
 		Rating        int    `json:"rating"`
 		Comment       string `json:"comment"`
-		EmployeeID    int64  `json:"employee_id"`
-		ClientID      int64  `json:"client_id"`
-		InstitutionID int64  `json:"institution_id"`
+		EmployeeID    int64
+		ClientID      int64 `json:"client_id"`
+		InstitutionID int64
 	}
 
 	err := app.readJSON(w, r, &input)
@@ -48,7 +49,7 @@ func (app *Config) GetFeedbackForAppointment(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	feedback, err := app.Models.Rating.GetById(id)
+	feedback, err := app.Models.Rating.GetRatingForAppointment(id)
 
 	if err != nil {
 		if err == data.ErrRecordNotFound {
@@ -59,11 +60,8 @@ func (app *Config) GetFeedbackForAppointment(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusOK, feedback)
+	app.writeJSON(w, http.StatusOK, feedback)
 
-	if err != nil {
-		app.errorJson(w, err)
-	}
 }
 
 func (app *Config) GetFeedbacksForEmployee(w http.ResponseWriter, r *http.Request) {
@@ -81,7 +79,7 @@ func (app *Config) GetFeedbacksForEmployee(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusOK, feedbacks)
+	app.writeJSON(w, http.StatusOK, map[string][]*data.Rating{"feedbacks": feedbacks})
 }
 
 func (app *Config) GetFeedbacksForClient(w http.ResponseWriter, r *http.Request) {
@@ -324,16 +322,24 @@ func (app *Config) UpdateFeedback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	user, err := app.contextGetUser(r)
+
+	if err != nil {
+		app.errorJson(w, err)
+		return
+	}
+
 	feedback := &data.Rating{
-		ID:      input.ID,
-		Rating:  input.Rating,
-		Comment: input.Comment,
+		ID:       input.ID,
+		Rating:   input.Rating,
+		Comment:  input.Comment,
+		ClientId: user.ID,
 	}
 
 	err = app.Models.Rating.Update(feedback)
 
 	if err != nil {
-		if err == data.ErrInvalidField {
+		if errors.Is(err, data.ErrRecordNotFound) {
 			app.errorJson(w, err, http.StatusBadRequest)
 			return
 		}

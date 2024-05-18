@@ -28,7 +28,9 @@ func openDB(dsn string) (*sql.DB, error) {
 
 func connectToDB() *sql.DB {
 	dsn := os.Getenv("DSN")
-
+	if dsn == "" {
+		dsn = "host=localhost port=5432 user=postgres password=190704Samat dbname=reserveHub sslmode=disable timezone=UTC connect_timeout=5"
+	}
 	for {
 		connection, err := openDB(dsn)
 		if err != nil {
@@ -51,8 +53,16 @@ func connectToDB() *sql.DB {
 }
 
 func openRedisConn() *redis.Client {
+	host := os.Getenv("REDIS_HOST")
+	if host == "" {
+		host = "localhost"
+	}
+	port := os.Getenv("REDIS_PORT")
+	if port == "" {
+		port = "6379"
+	}
 	client := redis.NewClient(&redis.Options{
-		Addr:     os.Getenv("REDIS_HOST") + ":" + os.Getenv("REDIS_PORT"),
+		Addr:      host+ ":" + port,
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})

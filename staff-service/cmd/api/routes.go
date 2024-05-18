@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"os"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -9,6 +10,11 @@ import (
 )
 
 func (app *Config) routes() http.Handler {
+	basePath := os.Getenv("BASE_PATH")
+	if basePath == "" {
+		basePath = "/"
+	}
+
 	mux := chi.NewRouter()
 
 	// specify who is allowed to connect
@@ -23,43 +29,56 @@ func (app *Config) routes() http.Handler {
 	mux.Use(middleware.Heartbeat("/ping"))
 	mux.Get("/health", app.HealthCheck)
 
-	// mux.Get("/employee/{id}", app.GetEmployeeById)
-	mux.Get("/schedule/{employee_id}/{service_id}", app.GetEmployeeScheduleAndService)
-	mux.Route("/employee", func(r chi.Router) {
+	// Add base path to routes
+	base := mux.Route(basePath, func(r chi.Router) {
+		r.Route("/employee", func(m chi.Router) {
+			m.Use(app.requireAuthentication)
+			m.Use(app.requireActivatedUser)
+			m.Use(app.requireOwnerRole)
+			m.Post("/create", app.CreateEmployee)
+			m.Post("/qr-code", app.CreateQRCodeToken)
+			m.Delete("/delete/{employee_id}", app.DeleteEmployee)
+			m.Group(func(f chi.Router) {
+				f.Use(app.requireInstOwnerForOwner)
+				f.Put("/update", app.UpdateEmployee)
+			})
+			m.Group(func(f chi.Router) {
+				f.Use(app.requireInstOwnerForOwnerToUpdateEmployeeSchedule)
 
-		r.Use(app.requireAuthentication)
-		r.Use(app.requireActivatedUser)
-		r.Use(app.requireOwnerRole)
-		r.Post("/create", app.CreateEmployee)
-		r.Post("/qr-code", app.CreateQRCodeToken)
-		r.Delete("/delete/{employee_id}", app.DeleteEmployee)
-		r.Group(func(r chi.Router) {
-			r.Use(app.requireInstOwnerForOwner)
-			r.Put("/update", app.UpdateEmployee)
+				f.Put("/update-schedule", app.UpdateEmployeeSchedule) // TODO: check update method
+			})
+			m.Put("/update-services", app.UpdateEmployeeServices) //TODO: check update method
+
 		})
-		// r.Put("/update-services", app.)
-		// r.Put("/update-schedule", app.)
 	})
-	mux.Route("/ws/joinRegisterEmployeeRoom", func(r chi.Router) {
+
+	base.Get("/schedule/{employee_id}/{service_id}", app.GetEmployeeScheduleAndService)
+
+	base.Route("/ws/joinRegisterEmployeeRoom", func(r chi.Router) {
 		r.Use(app.requireAuthentication)
 		r.Use(app.requireActivatedUser)
 		r.Get("/{token}", app.JoinRegisterEmployeeRoom)
 	})
 
-	//mux.Get("/service/{id}", app.GetServiceById)
-	mux.Get("/institution-service/{id}", app.GetServiceForInstitution)
-	mux.Get("/institution-employee/{instId}", app.GetAllEmployeesForInstitution)
+	base.Get("/institution-service/{id}", app.GetServiceForInstitution)
+	base.Get("/institution-employee/{instId}", app.GetAllEmployeesForInstitution)
 
-	mux.Route("/service", func(r chi.Router) {
+	base.Route("/service", func(r chi.Router) {
 		r.Get("/{id}", app.GetService)
 		r.Group(func(r chi.Router) {
 			r.Use(app.requireAuthentication)
 			r.Use(app.requireActivatedUser)
 			r.Post("/create", app.CreateService) // TODO: add middleware to check if user is owner of institution
+			r.Put("/update", app.UpdateService)
+			r.Delete("/delete/{id}", app.DeleteService)
 		})
-		//r.Put("/update", app.)
-		//r.Delete("/delete/{id}", app.)
 	})
+
+	base.Route("/institution", func(r chi.Router) {
+		r.Use(app.requireAuthentication)
+		r.Get("/inst-user-employee", app.GetInstitutionsUserEmployee)
+	})
+
 	mux.NotFound(app.NotFound)
 	return mux
 }

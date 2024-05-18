@@ -155,3 +155,29 @@ func (app *Config) DeleteAccountViaGRpc(w http.ResponseWriter, r RequestPayload)
 
 	app.writeJSON(w, http.StatusAccepted, map[string]any{"message": res.Result, "error": false})
 }
+
+
+func (app *Config) SendSmsViaGRpc(w http.ResponseWriter, r RequestPayload) {
+	conn, err := grpc.Dial(app.authServiceHost, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	if err != nil {
+		app.rpcErrorJson(w, err)
+		return
+	}
+	defer conn.Close()
+
+	c := auth.NewSmsServiceClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	res, err := c.SendCode(ctx, &auth.SmsRequest{
+		SmsEntry: &auth.Sms{
+			PhoneNumber: r.Sms.PhoneNumber,
+		},
+	})
+	if err != nil {
+		app.rpcErrorJson(w, err)
+		return
+	}
+
+	app.writeJSON(w, http.StatusAccepted, map[string]any{"message": res.Result, "error": false})
+}

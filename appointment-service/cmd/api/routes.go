@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"os"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -9,6 +10,10 @@ import (
 )
 
 func (app *Config) routes() http.Handler {
+	basePath := os.Getenv("BASE_PATH")
+	if basePath == "" {
+		basePath = ""
+	}
 	mux := chi.NewRouter()
 
 	// specify who is allowed to connect
@@ -22,9 +27,9 @@ func (app *Config) routes() http.Handler {
 	}))
 	mux.Use(middleware.Heartbeat("/ping"))
 	mux.Get("/health", app.HealthCheck)
-	mux.Get("/available-time-slots/{employee_id}", app.GetAvailableTimeSlots)
-	mux.Route("/appointment", func(r chi.Router) {
-		
+	mux.Get(basePath + "/available-time-slots/{employee_id}", app.GetAvailableTimeSlots)
+	mux.Get(basePath + "/completed-appointments-number/{clientId}", app.GetNumberOfCompletedAppointmentsForUser)
+	mux.Route(basePath + "/appointment", func(r chi.Router) {
 		r.Use(app.requireAuthentication)
 		r.Use(app.requireActivatedUser)
 		r.Get("/{id}", app.GetAppointmentById)

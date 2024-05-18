@@ -27,6 +27,7 @@ var (
 	ErrBadRequest     = errors.New("bad request")
 	ErrInternal       = errors.New("data server error")
 	ErrAuthentication = errors.New("authentication failed")
+	ErrNotActivated   = errors.New("account not activated")
 )
 
 func (app *Config) readJSON(w http.ResponseWriter, r *http.Request, data any) error {
@@ -179,3 +180,18 @@ func (app *Config) sendGetRequest(endpoint string, output any) error{
 	return nil
 }
 
+
+func (app *Config) readIntFromUrl(qs url.Values, key string, defaultValue int64) (int64, error) {
+	s := qs.Get(key)
+
+	if s == "" {
+		return defaultValue, nil
+	}
+
+	i, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		return defaultValue, err
+	}
+
+	return i, nil
+}

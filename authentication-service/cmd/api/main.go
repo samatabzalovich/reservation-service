@@ -68,9 +68,7 @@ func (app *Config) grpcListen() {
 	s := grpc.NewServer()
 	//get url from env file
 	url := os.Getenv("SMS_URL")
-	//get API key from env file
-	apiKey := os.Getenv("API_KEY")
-	authService := &AuthService{Models: app.Models, Sender: sms.NewMessageService(url, apiKey), Redis: app.Redis}
+	authService := &AuthService{Models: app.Models, Sender: sms.NewMessageService(url), Redis: app.Redis}
 	auth.RegisterTokenServiceServer(s, authService)
 	auth.RegisterRegServiceServer(s, authService)
 	auth.RegisterAuthServiceServer(s, authService)

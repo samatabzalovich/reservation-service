@@ -19,13 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	InstitutionService_GetInstitution_FullMethodName          = "/inst.InstitutionService/GetInstitution"
-	InstitutionService_CreateInstitution_FullMethodName       = "/inst.InstitutionService/CreateInstitution"
-	InstitutionService_UpdateInstitution_FullMethodName       = "/inst.InstitutionService/UpdateInstitution"
-	InstitutionService_DeleteInstitution_FullMethodName       = "/inst.InstitutionService/DeleteInstitution"
-	InstitutionService_SearchInstitutions_FullMethodName      = "/inst.InstitutionService/SearchInstitutions"
-	InstitutionService_GetForToken_FullMethodName             = "/inst.InstitutionService/GetForToken"
-	InstitutionService_GetInstitutionsForOwner_FullMethodName = "/inst.InstitutionService/GetInstitutionsForOwner"
+	InstitutionService_GetInstitution_FullMethodName                 = "/inst.InstitutionService/GetInstitution"
+	InstitutionService_CreateInstitution_FullMethodName              = "/inst.InstitutionService/CreateInstitution"
+	InstitutionService_UpdateInstitution_FullMethodName              = "/inst.InstitutionService/UpdateInstitution"
+	InstitutionService_DeleteInstitution_FullMethodName              = "/inst.InstitutionService/DeleteInstitution"
+	InstitutionService_SearchInstitutions_FullMethodName             = "/inst.InstitutionService/SearchInstitutions"
+	InstitutionService_GetForToken_FullMethodName                    = "/inst.InstitutionService/GetForToken"
+	InstitutionService_GetInstitutionsForOwner_FullMethodName        = "/inst.InstitutionService/GetInstitutionsForOwner"
+	InstitutionService_GetInstitutionsForUserEmployee_FullMethodName = "/inst.InstitutionService/GetInstitutionsForUserEmployee"
 )
 
 // InstitutionServiceClient is the client API for InstitutionService service.
@@ -39,6 +40,7 @@ type InstitutionServiceClient interface {
 	SearchInstitutions(ctx context.Context, in *SearchInstitutionsRequest, opts ...grpc.CallOption) (*InstitutionsResponse, error)
 	GetForToken(ctx context.Context, in *GetInstForTokenRequest, opts ...grpc.CallOption) (*Institution, error)
 	GetInstitutionsForOwner(ctx context.Context, in *GetInstitutionsByIdRequest, opts ...grpc.CallOption) (*InstitutionsResponse, error)
+	GetInstitutionsForUserEmployee(ctx context.Context, in *GetInstitutionsByIdRequest, opts ...grpc.CallOption) (*InstitutionsResponse, error)
 }
 
 type institutionServiceClient struct {
@@ -112,6 +114,15 @@ func (c *institutionServiceClient) GetInstitutionsForOwner(ctx context.Context, 
 	return out, nil
 }
 
+func (c *institutionServiceClient) GetInstitutionsForUserEmployee(ctx context.Context, in *GetInstitutionsByIdRequest, opts ...grpc.CallOption) (*InstitutionsResponse, error) {
+	out := new(InstitutionsResponse)
+	err := c.cc.Invoke(ctx, InstitutionService_GetInstitutionsForUserEmployee_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // InstitutionServiceServer is the server API for InstitutionService service.
 // All implementations must embed UnimplementedInstitutionServiceServer
 // for forward compatibility
@@ -123,6 +134,7 @@ type InstitutionServiceServer interface {
 	SearchInstitutions(context.Context, *SearchInstitutionsRequest) (*InstitutionsResponse, error)
 	GetForToken(context.Context, *GetInstForTokenRequest) (*Institution, error)
 	GetInstitutionsForOwner(context.Context, *GetInstitutionsByIdRequest) (*InstitutionsResponse, error)
+	GetInstitutionsForUserEmployee(context.Context, *GetInstitutionsByIdRequest) (*InstitutionsResponse, error)
 	mustEmbedUnimplementedInstitutionServiceServer()
 }
 
@@ -150,6 +162,9 @@ func (UnimplementedInstitutionServiceServer) GetForToken(context.Context, *GetIn
 }
 func (UnimplementedInstitutionServiceServer) GetInstitutionsForOwner(context.Context, *GetInstitutionsByIdRequest) (*InstitutionsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetInstitutionsForOwner not implemented")
+}
+func (UnimplementedInstitutionServiceServer) GetInstitutionsForUserEmployee(context.Context, *GetInstitutionsByIdRequest) (*InstitutionsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetInstitutionsForUserEmployee not implemented")
 }
 func (UnimplementedInstitutionServiceServer) mustEmbedUnimplementedInstitutionServiceServer() {}
 
@@ -290,6 +305,24 @@ func _InstitutionService_GetInstitutionsForOwner_Handler(srv interface{}, ctx co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _InstitutionService_GetInstitutionsForUserEmployee_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetInstitutionsByIdRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InstitutionServiceServer).GetInstitutionsForUserEmployee(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: InstitutionService_GetInstitutionsForUserEmployee_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InstitutionServiceServer).GetInstitutionsForUserEmployee(ctx, req.(*GetInstitutionsByIdRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // InstitutionService_ServiceDesc is the grpc.ServiceDesc for InstitutionService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -324,6 +357,10 @@ var InstitutionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetInstitutionsForOwner",
 			Handler:    _InstitutionService_GetInstitutionsForOwner_Handler,
+		},
+		{
+			MethodName: "GetInstitutionsForUserEmployee",
+			Handler:    _InstitutionService_GetInstitutionsForUserEmployee_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

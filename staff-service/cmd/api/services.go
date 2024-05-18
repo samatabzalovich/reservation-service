@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"log"
 	"net/http"
 	"staff-service/internal/data"
 	"time"
@@ -36,7 +35,6 @@ func (app *Config) CreateService(w http.ResponseWriter, r *http.Request) {
 		app.errorJson(w, err, http.StatusBadRequest)
 		return
 	}
-	log.Println(service.ServiceType)
 
 	err = app.Models.Service.Insert(service)
 	if err != nil {
@@ -44,6 +42,8 @@ func (app *Config) CreateService(w http.ResponseWriter, r *http.Request) {
 		case errors.Is(err, data.ErrInvalidInstId):
 			app.errorJson(w, err, http.StatusBadRequest)
 		case errors.Is(err, data.ErrInvalidServices):
+			app.errorJson(w, err, http.StatusBadRequest)
+		case errors.Is(err, data.ErrUserIsNotEmployee):
 			app.errorJson(w, err, http.StatusBadRequest)
 		default:
 			app.errorJson(w, err, http.StatusInternalServerError)
@@ -88,4 +88,68 @@ func (app *Config) GetService(w http.ResponseWriter, r *http.Request) {
 	}
 
 	app.writeJSON(w, http.StatusOK, service)
+}
+
+func (app *Config) UpdateService(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		ID          int64  `json:"id"`
+		Name        string `json:"name"`
+		Price       int    `json:"price"`
+		Description string `json:"description"`
+		Duration    string `json:"duration"`
+		PhotoUrl    string `json:"photoUrl"`
+		ServiceType string `json:"serviceType"`
+	}
+
+	err := app.readJSON(w, r, &input)
+	if err != nil {
+		app.errorJson(w, err, http.StatusBadRequest)
+		return
+	}
+
+	duration, err := time.ParseDuration(input.Duration)
+	if err != nil {
+		app.errorJson(w, err, http.StatusBadRequest)
+		return
+	}
+
+	service := &data.Service{
+		ID:          input.ID,
+		Name:        input.Name,
+		Price:       input.Price,
+		Description: input.Description,
+		Duration:    duration,
+		PhotoUrl:    input.PhotoUrl,
+		ServiceType: input.ServiceType,
+		InstId:      0,
+	}
+
+	err = app.Models.Service.Update(service)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.errorJson(w, err, http.StatusBadRequest)
+		default:
+			app.errorJson(w, err, http.StatusInternalServerError)
+		}
+		return
+	}
+
+	app.writeJSON(w, http.StatusOK, map[string]string{"message": "Service updated"})
+}
+
+func (app *Config) DeleteService(w http.ResponseWriter, r *http.Request) {
+	serviceId, err := app.readIntParam(r, "id")
+	if err != nil {
+		app.errorJson(w, err, http.StatusBadRequest)
+		return
+	}
+
+	err = app.Models.Service.Delete(serviceId)
+	if err != nil {
+		app.errorJson(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	app.writeJSON(w, http.StatusOK, map[string]string{"message": "Service deleted"})
 }

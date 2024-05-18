@@ -21,7 +21,7 @@ type AuthPayload struct {
 }
 type SmsPayload struct {
 	PhoneNumber string `json:"phoneNumber"`
-	Code        string `json:"code"`
+	Code        string `json:"code,omitempty"`
 }
 type RegPayload struct {
 	UserName    string `json:"userName"`

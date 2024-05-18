@@ -346,3 +346,44 @@ func (app *Config) GetAppointmentsForClient(w http.ResponseWriter, r *http.Reque
 func (app *Config) EqualTime(t1, t2 time.Time) bool {
 	return t1.Hour() == t2.Hour() && t1.Minute() == t2.Minute()
 }
+
+
+func (app *Config) GetNumberOfCompletedAppointmentsForUser(w http.ResponseWriter, r *http.Request) {
+	clientId, err := app.readIntParam(r, "clientId")
+	if err != nil {
+		app.errorJson(w, err)
+		return
+	}
+	var employeeIdInt int64
+	employeeIdString := app.readString(r.URL.Query(), "employeeId", "")
+	if employeeIdString == "" {
+		employeeIdInt = 0
+	} else {
+		employeeIdInt, err = strconv.ParseInt(employeeIdString, 10, 64)
+		if err != nil {
+			app.errorJson(w, err)
+			return
+		}
+	}
+
+	instIdString := app.readString(r.URL.Query(), "instId", "")
+
+	if instIdString == "" {
+		app.errorJson(w, errors.New("missing instId"), http.StatusBadRequest)
+		return
+	}
+
+	instId, err := strconv.ParseInt(instIdString, 10, 64)
+	if err != nil {
+		app.errorJson(w, err, http.StatusBadRequest)
+		return
+	}
+
+	count, err := app.Models.Appointments.GetNumberOfCompletedAppointmentsForUser(clientId, instId, employeeIdInt)
+	if err != nil {
+		app.errorJson(w, err)
+		return
+	}
+
+	app.writeJSON(w, http.StatusOK, map[string]any{"count": count})
+}

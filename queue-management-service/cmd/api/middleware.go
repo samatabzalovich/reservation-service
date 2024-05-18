@@ -16,7 +16,7 @@ func (app *Config) requireActivatedUser(next http.Handler) http.Handler {
 			return
 		}
 		if !user.Activated {
-			app.errorJson(w, ErrAuthentication, http.StatusUnauthorized)
+			app.errorJson(w, ErrNotActivated, http.StatusForbidden)
 			return
 		}
 		next.ServeHTTP(w, r)

@@ -78,5 +78,6 @@ type Models struct {
 		GetForToken(tokenScope, token string) (*Institution, error)
 		GetForOwner(ownerId int64) ([]*Institution, Metadata, error)
 		GetForEmployee(employeeId int64) (*Institution, error)
+		GetForUserEmployee(userId int64) ([]*Institution, error)
 	}
 }

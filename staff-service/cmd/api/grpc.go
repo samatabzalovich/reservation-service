@@ -137,3 +137,23 @@ func (app *Config) GetInstitutionForEmployee(employeeId int64) (*inst.Institutio
 	}
 	return res, nil
 }
+
+func (app *Config) GetInstitutionsForUserEmployee(userId int64) (*inst.InstitutionsResponse, error) {
+	conn, err := grpc.Dial(app.instServiceHost, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	c := inst.NewInstitutionServiceClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	res, err := c.GetInstitutionsForUserEmployee(ctx, &inst.GetInstitutionsByIdRequest{
+		Id: userId,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}

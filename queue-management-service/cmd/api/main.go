@@ -32,7 +32,7 @@ type Config struct {
 func main() {
 	authHost := os.Getenv("AUTH_SERVICE")
 	if authHost == "" {
-		log.Fatalf("AUTH_SERVICE env variable not set")
+		authHost = "localhost:50001"
 	}
 	db := connectToDB()
 	var upgrader = websocket.Upgrader{

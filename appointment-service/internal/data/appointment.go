@@ -407,3 +407,19 @@ func (m AppointmentModel) GetAvailableTimeSlots(instId int64, employeeId int64, 
 	}
 	return timeSlots, nil
 }
+
+func (m AppointmentModel) GetNumberOfCompletedAppointmentsForUser(userId, instId, employeeId int64) (int, error) {
+	query := `SELECT COUNT(id) FROM appointments WHERE user_id = $1 AND end_time < NOW() AND is_canceled = false AND institution_id = $2`
+	if employeeId > 0 {
+		query += ` AND employee_id = $3`
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	row := m.DB.QueryRowContext(ctx, query, userId)
+	var count int
+	err := row.Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}

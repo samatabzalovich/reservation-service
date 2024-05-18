@@ -10,6 +10,9 @@ import (
 )
 
 func (app *Config) AuthenticateViaGrpc(token string) (*User, error) {
+	if (app.authServiceHost == "") {
+		app.authServiceHost = "localhost:50001"
+	}
 	conn, err := grpc.Dial(app.authServiceHost, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
 

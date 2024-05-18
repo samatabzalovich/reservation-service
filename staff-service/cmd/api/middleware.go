@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/json"
+	"io"
 	"log"
 	"net/http"
 	"staff-service/internal/data"
@@ -98,6 +100,52 @@ func (app *Config) requireInstOwnerForOwner(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+
+func (app *Config) requireInstOwnerForOwnerToUpdateEmployeeSchedule(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user, err := app.contextGetUser(r)
+		if err != nil {
+			app.errorJson(w, err, http.StatusUnauthorized)
+			return
+		}
+		var input struct {
+			EmployeeID int64 `json:"employeeId"`
+			Schedule   []*data.EmployeeSchedule `json:"schedule"`
+		}
+	
+		byteData, err := io.ReadAll(r.Body)
+		if err != nil {
+
+			app.errorJson(w, err, http.StatusBadRequest)
+			return
+		}
+		err = json.Unmarshal(byteData, &input)
+		if err != nil {
+			app.errorJson(w, err, http.StatusBadRequest)
+			return
+		}
+		employee, err := app.Models.Employees.GetById(input.EmployeeID)
+		if err != nil {
+			app.errorJson(w, err, http.StatusBadRequest)
+			return
+		}
+		institution, err := app.GetInstitution(employee.InstId)
+		if err != nil {
+			app.rpcErrorJson(w, err)
+			return
+		}
+		if institution.OwnerId != user.ID {
+			app.errorJson(w, ErrBadRequest, http.StatusForbidden)
+			return
+		}
+
+		employee.Schedule = input.Schedule
+		r = app.contextSetEmployee(r, employee)
+		next.ServeHTTP(w, r)
+	})
+}
+
+
 
 // func (app *Config) rateLimit(next http.Handler) http.Handler {
 

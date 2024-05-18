@@ -192,6 +192,19 @@ func (q QueueModel) GetLastForClient(clientId int64) (*Queue, error) {
 	return queue, nil
 }
 
+func (q QueueModel) GetQueueLength(serviceId int64) (int, error) {
+	stmt := `SELECT COUNT(*) FROM queue WHERE service_id = $1 AND status != 'completed' AND status != 'cancelled'`
+	var length int
+	err := db.QueryRow(stmt, serviceId).Scan(&length)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, ErrRecordNotFound
+		}
+		return 0, err
+	}
+	return length, nil
+}
+
 func (q QueueModel) GetLastPositionedQueue(serviceId int64) (*Queue, error) {
 	stmt := `SELECT id, user_id, institution_id, employee_id, service_id, position, status, created_at, updated_at FROM queue WHERE service_id = $1 ORDER BY position DESC LIMIT 1`
 	queue := &Queue{}
@@ -216,4 +229,24 @@ func (q QueueModel) CallFromQueue(queue *Queue) error {
 		return err
 	}
 	return nil
+}
+
+func (q QueueModel) GetQueueForClientInInstitution(clientId, instId, employeeId int64) (int, error) {
+	args := []any{clientId, instId}
+	stmt := `SELECT COUNT(*) FROM queue WHERE user_id = $1 AND institution_id = $2 AND status == 'completed'`
+
+	if employeeId == 0 {
+		stmt = stmt + `AND employee_id = $3`
+		args = append(args, employeeId)
+	}
+	
+	var length int
+	err := db.QueryRow(stmt, args...).Scan(&length)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, ErrRecordNotFound
+		}
+		return 0, err
+	}
+	return length, nil
 }

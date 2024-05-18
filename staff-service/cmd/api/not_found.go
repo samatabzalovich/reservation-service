@@ -6,5 +6,6 @@ import (
 )
 
 func (app *Config) NotFound(w http.ResponseWriter, r *http.Request) {
+	//print  the route that was not found to the console
 	app.errorJson(w, errors.New("endpoint not found"), http.StatusNotFound)
 }

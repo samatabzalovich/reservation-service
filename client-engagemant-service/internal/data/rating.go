@@ -3,6 +3,7 @@ package data
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"time"
 
 	"github.com/jackc/pgx"
@@ -114,13 +115,16 @@ func (m *RatingModel) Update(rating *Rating) error {
 	query := `
 		UPDATE ratings
 		SET rating = $1, comment = $2, updated_at = NOW()
-		WHERE id = $4
+		WHERE id = $4 AND client_id = $3
 		RETURNING updated_at
 	`
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	err := m.DB.QueryRowContext(ctx, query, rating.Rating, rating.Comment, time.Now(), rating.ID).Scan(&rating.UpdateAt)
+	err := m.DB.QueryRowContext(ctx, query, rating.Rating, rating.Comment, time.Now(), rating.ID, rating.ClientId).Scan(&rating.UpdateAt)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrRecordNotFound
+		}
 		return err
 	}
 	return nil
@@ -208,6 +212,9 @@ func (m *RatingModel) GetRatingForAppointment(appointmentId int64) (*Rating, err
 	defer cancel()
 	err := m.DB.QueryRowContext(ctx, query, appointmentId).Scan(&rating.ID, &rating.AppointmentId, &rating.EmployeeId, &rating.ClientId, &rating.InstitutionId, &rating.Rating, &rating.Comment, &rating.CreatedAt, &rating.UpdateAt)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrRecordNotFound
+		}
 		return nil, err
 	}
 	return &rating, nil

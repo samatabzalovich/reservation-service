@@ -97,9 +97,6 @@ func (app *Config) GetEmployeeScheduleAndService(w http.ResponseWriter, r *http.
 		app.errorJson(w, err, http.StatusBadRequest)
 		return
 	}
-	log.Println("employeeID: ", employeeID)
-	log.Println("serviceID: ", serviceID)
-	log.Println("selectedDay: ", selectedDay)
 	employee, err := app.Models.Employees.GetEmployeeScheduleAndService(employeeID, serviceID, selectedDay)
 	if err != nil {
 		if err == data.ErrRecordNotFound {
@@ -125,6 +122,124 @@ func (app *Config) UpdateEmployee(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	app.writeJSON(w, http.StatusOK, map[string]any{"message": "employee updated"})
+}
+
+func (app *Config) UpdateEmployeeSchedule(w http.ResponseWriter, r *http.Request) {
+	input,err := app.contextGetEmployee(r)
+
+	if err != nil {
+		app.errorJson(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	if len(input.Schedule) == 0 || len(input.Schedule) > 7 {
+		app.errorJson(w, data.ErrInvalidSchedule, http.StatusBadRequest)
+		return
+	}
+
+	if input.ID <= 0 {
+		app.errorJson(w, data.ErrInvalidEmployeeId, http.StatusBadRequest)
+		return
+	}
+
+	
+	schedules := make([]*data.EmployeeSchedule, 0, len(input.Schedule))
+
+	for _, s := range input.Schedule {
+		schedule, err := data.NewEmployeeSchedule(s.DayOfWeek, s.StartTime, s.EndTime, s.BreakStartTime, s.BreakEndTime)
+		if err != nil {
+			app.errorJson(w, err, http.StatusBadRequest)
+			return
+		}
+		schedules = append(schedules, schedule)
+	}
+	input.Schedule =	schedules
+
+	err = app.Models.Employees.UpdateSchedule(input)
+	if err != nil {
+		app.errorJson(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	app.writeJSON(w, http.StatusOK, map[string]any{"message": "employee schedule updated"})
+}
+
+func (app *Config) UpdateEmployeeServices(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		EmployeeID int64   `json:"employeeId"`
+		Services   []int64 `json:"services"`
+	}
+	err := app.readJSON(w, r, &input)
+
+	if err != nil {
+		app.errorJson(w, err, http.StatusBadRequest)
+		return
+	}
+
+	if len(input.Services) == 0 {
+		app.errorJson(w, data.ErrInvalidServices, http.StatusBadRequest)
+		return
+	}
+
+	if input.EmployeeID <= 0 {
+		app.errorJson(w, data.ErrInvalidEmployeeId, http.StatusBadRequest)
+		return
+	}
+
+	employee, err := app.Models.Employees.GetById(input.EmployeeID)
+
+	if err != nil {
+		if err == data.ErrRecordNotFound {
+			app.errorJson(w, data.ErrInvalidEmployeeId, http.StatusNotFound)
+			return
+		}
+		app.errorJson(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	owner, err := app.contextGetUser(r)
+
+	if err != nil {
+		app.errorJson(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	inst, err := app.GetInstitution(employee.InstId)
+
+	if err != nil {
+		app.rpcErrorJson(w, err)
+		return
+	}
+
+	if inst.OwnerId != owner.ID {
+		app.errorJson(w, data.ErrInvalidEmployeeORUserNotOwner, http.StatusForbidden)
+		return
+	}
+
+	services := make([]*data.EmployeeServices, 0, len(input.Services))
+
+	for _, s := range input.Services {
+		service, err := data.NewEmployeeServices(s)
+		if err != nil {
+			app.errorJson(w, err, http.StatusBadRequest)
+			return
+		}
+		services = append(services, service)
+	}
+
+	employee.Services = services
+
+	err = app.Models.Employees.UpdateServices(employee)
+	if err != nil {
+		if err == data.ErrRecordNotFound {
+			app.errorJson(w, data.ErrInvalidServiceId, http.StatusNotFound)
+			return
+		}
+		app.errorJson(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	app.writeJSON(w, http.StatusOK, map[string]any{"message": "employee services updated"})
 }
 
 func (app *Config) DeleteEmployee(w http.ResponseWriter, r *http.Request) {

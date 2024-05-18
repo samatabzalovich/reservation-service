@@ -20,6 +20,9 @@ type Service struct {
 
 func (app *Config) GetServiceById(id int64) (*Service, error) {
 	var service Service
+	if (app.staffServiceHost == "") {
+		app.staffServiceHost = "localhost:8082/staff-services-host/"
+	}
 	endpoint := fmt.Sprintf("http://%s%s%d", app.staffServiceHost, "service/", id)
 	err := app.sendGetRequest(endpoint, &service)
 	if err != nil {

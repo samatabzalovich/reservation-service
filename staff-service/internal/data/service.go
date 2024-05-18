@@ -183,20 +183,22 @@ func (m ServiceModel) GetById(id int64) (*Service, error) {
 }
 
 func (m ServiceModel) Update(service *Service) error {
+	intervalStr := fmt.Sprintf("%d hours %d minutes %d seconds",
+		int(service.Duration.Hours()), int(service.Duration.Minutes())%60, int(service.Duration.Seconds())%60)
 	query := `
 		UPDATE services
-		SET name = $1, description = $2, price = $3, duration = $4, photo_url = $5, updated_at = CURRENT_TIMESTAMP, type = $6
-		WHERE id = $7 AND institution_id = $8`
-	args := []interface{}{
+		SET name = $1, description = $2, price = $3, duration = $4, photo_url = $5, updated_at = NOW(), type = $6
+		WHERE id = $7 RETURNING id`
+	args := []any{
 		service.Name,
 		service.Description,
 		service.Price,
-		service.Duration,
+		intervalStr,
 		service.PhotoUrl,
 		service.ServiceType,
 		service.ID,
-		service.InstId,
 	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	err := m.DB.QueryRowContext(ctx, query, args...).Scan(&service.ID)

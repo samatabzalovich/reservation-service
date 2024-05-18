@@ -93,9 +93,14 @@ func (es *EmployeeSchedule) ParseToTimeStruct(dayOfWeek int, startTime string, e
 
 func (es *EmployeeSchedule) UnmarshalJSON(data []byte) error {
 	var aux employeeScheduleAux
+
 	err := json.Unmarshal(data, &aux)
 	if err != nil {
 		return err
+	}
+	// Check if any time string is empty, and return an error if so
+	if aux.StartTime == "" || aux.EndTime == "" || aux.BreakStartTime == "" || aux.BreakEndTime == "" {
+		return errors.New("time fields cannot be empty")
 	}
 	if es.StartTime, err = time.Parse(TimeParse, aux.StartTime); err != nil {
 		return err
@@ -149,7 +154,7 @@ func NewEmployeeServices(serviceId int64) (*EmployeeServices, error) {
 	}, nil
 }
 func NewEmployeeSchedule(dayOfWeek int, startTime time.Time, endTime time.Time, breakStartTime time.Time, breakEndTime time.Time) (*EmployeeSchedule, error) {
-	if dayOfWeek < 0 || dayOfWeek > 6 {
+	if dayOfWeek < 1 || dayOfWeek > 7 {
 		return nil, ErrInvalidDayOfWeek // Assuming ErrInvalidDayOfWeek is a predefined error
 	}
 	if endTime.Before(startTime) {
@@ -173,11 +178,21 @@ type EmployeeModel struct {
 }
 
 func (m EmployeeModel) Insert(employee *Employee) error {
-	query := `Insert into employee (inst_id, user_id, description, name, photo_url) VALUES ($1, $2, $3, $4, $5) RETURNING id`
+	// check if the user is employee type
+	query := `SELECT type FROM users WHERE id = $1`
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	var userType string
+	err := m.DB.QueryRowContext(ctx, query, employee.UserId).Scan(&userType)
+	if err != nil {
+		return err
+	}
+	if userType != "employee" {
+		return ErrUserIsNotEmployee
+	}
+	query = `Insert into employee (inst_id, user_id, description, name, photo_url) VALUES ($1, $2, $3, $4, $5) RETURNING id`
 	args := []any{employee.InstId, employee.UserId, employee.Description, employee.Name, employee.PhotoUrl}
 	var employeeId int64
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
 
 	tx, err := m.DB.BeginTx(ctx, nil)
 	if err != nil {
@@ -336,6 +351,9 @@ func (m EmployeeModel) GetById(id int64) (*Employee, error) {
 		&employee.PhotoUrl,
 	)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrRecordNotFound
+		}
 		return nil, err
 	}
 	query = `
@@ -349,13 +367,18 @@ func (m EmployeeModel) GetById(id int64) (*Employee, error) {
 	defer rows.Close()
 	for rows.Next() {
 		var schedule EmployeeSchedule
-		err := rows.Scan(
-			&schedule.DayOfWeek,
-			&schedule.StartTime,
-			&schedule.EndTime,
-			&schedule.BreakStartTime,
-			&schedule.BreakEndTime,
+		var (
+			dayOfWeek         int
+			startTimeStr      string
+			endTimeStr        string
+			breakStartTimeStr string
+			breakEndTimeStr   string
 		)
+		err := rows.Scan(&dayOfWeek, &startTimeStr, &endTimeStr, &breakStartTimeStr, &breakEndTimeStr)
+		if err != nil {
+			return nil, err
+		}
+		err = schedule.ParseToTimeStruct(dayOfWeek, startTimeStr, endTimeStr, breakStartTimeStr, breakEndTimeStr)
 		if err != nil {
 			return nil, err
 		}
@@ -435,9 +458,13 @@ func (m EmployeeModel) UpdateSchedule(employee *Employee) error {
 		return err
 	}
 	for _, schedule := range employee.Schedule {
+		hs, ms, ss := schedule.StartTime.Clock()
+		he, me, se := schedule.EndTime.Clock()
+		hbs, mbs, sbs := schedule.BreakStartTime.Clock()
+		hbe, mbe, sbe := schedule.BreakEndTime.Clock()
 		query = `
 		INSERT INTO employee_schedule (employee_id, day_of_week, start_time, end_time, break_start_time, break_end_time) VALUES ($1, $2, $3, $4, $5, $6)`
-		args := []any{employee.ID, schedule.DayOfWeek, schedule.StartTime, schedule.EndTime, schedule.BreakStartTime, schedule.BreakEndTime}
+		args := []any{employee.ID, schedule.DayOfWeek, fmt.Sprintf("%d:%d:%d", hs, ms, ss), fmt.Sprintf("%d:%d:%d", he, me, se), fmt.Sprintf("%d:%d:%d", hbs, mbs, sbs), fmt.Sprintf("%d:%d:%d", hbe, mbe, sbe)}
 		_, err = m.DB.ExecContext(ctx, query, args...)
 		if err != nil {
 			return err

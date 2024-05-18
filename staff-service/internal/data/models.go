@@ -20,6 +20,9 @@ var (
 	ErrInvalidPrice       = errors.New("invalid price")
 	ErrRecordNotFound     = errors.New("record not found")
 	ErrInvalidServiceType = errors.New("invalid service type")
+	ErrInvalidEmployeeId  = errors.New("invalid employee id")
+	ErrInvalidEmployeeORUserNotOwner   = errors.New("invalid employee, or user is not owner of institution")
+	ErrUserIsNotEmployee  = errors.New("user is not employee")
 )
 
 var db *sql.DB

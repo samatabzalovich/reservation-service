@@ -39,5 +39,7 @@ type Models struct {
 		CallFromQueue(queue *Queue) error
 		GetLastPositionedQueue(serviceId int64) (*Queue, error)
 		GetLastForClient(clientId int64) (*Queue, error)
+		GetQueueLength(serviceId int64) (int, error)
+		GetQueueForClientInInstitution(clientId, instId, employeeId int64) (int, error)
 	}
 }

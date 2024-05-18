@@ -36,6 +36,6 @@ type Models struct {
 		Delete(id int64) error
 		GetAllForClient(clientId int64) ([]*Appointment, error)
 		GetAllForEmployee(employeeId int64) ([]*Appointment, error)
-		
+		GetNumberOfCompletedAppointmentsForUser(userId, instId, employeeId int64) (int, error)
 	}
 }

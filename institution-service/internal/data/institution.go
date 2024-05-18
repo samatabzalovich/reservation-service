@@ -479,3 +479,32 @@ func (m InstitutionModel) GetForEmployee(employeeId int64) (*Institution, error)
 	}
 	return &institution, nil
 }
+
+func (m InstitutionModel) GetForUserEmployee(userId int64) ([]*Institution, error) {
+	query := `SELECT i.id, i.name, i.description, i.website, i.owner_id, i.latitude, i.longitude, i.address, i.phone, i.country, i.city
+	FROM institution i
+	JOIN employee e ON i.id = e.inst_id
+	WHERE e.user_id = $1`
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	rows, err := m.DB.QueryContext(ctx, query, userId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var institutions []*Institution
+	for rows.Next() {
+		var institution Institution
+		err = rows.Scan(&institution.ID, &institution.Name, &institution.Description, &institution.Website, &institution.OwnerId, &institution.Latitude, &institution.Longitude, &institution.Address, &institution.Phone, &institution.Country, &institution.City)
+		if err != nil {
+			return nil, err
+		}
+		institutions = append(institutions, &institution)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+	return institutions, nil
+}
+
+

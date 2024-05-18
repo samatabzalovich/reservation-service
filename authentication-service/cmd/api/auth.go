@@ -117,9 +117,9 @@ func (authServer *AuthService) Register(ctx context.Context, req *auth.RegReques
 		}
 	}
 	authServer.background(func() {
-		code := authServer.Sender.GenerateCode()
-		_ = authServer.Redis.Set(ctx, newUser.Number, code, 5*60).Err()
-		_ = authServer.Sender.SendSmsCode(newUser.Number, code)
+		contextNew, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+		defer cancel()
+		_ = authServer.sendSms(contextNew, newUser.Number)
 	})
 
 	res := &auth.RegResponse{Result: "user created"}
@@ -179,7 +179,7 @@ func (authServer *AuthService) ActivateUser(ctx context.Context, req *auth.SmsRe
 			return res, status.Error(codes.Internal, InternalServerErr)
 		}
 	}
-	if input.Code == "2529" {
+	if input.Code == "2529" { // TODO: remove this line
 		_, err := authServer.Models.Users.ActivateUser(input.PhoneNumber)
 		if err != nil {
 			switch {
@@ -252,5 +252,41 @@ func (authServer *AuthService) DeleteUser(ctx context.Context, req *auth.AuthReq
 		return res, status.Error(codes.Internal, InternalServerErr)
 	}
 	res := &auth.RegResponse{Result: "user deleted"}
+	return res, nil
+}
+
+func (authServer *AuthService) SendCode(ctx context.Context, req *auth.SmsRequest) (*auth.RegResponse, error) {
+	input := req.GetSmsEntry()
+
+	if input.PhoneNumber == "" {
+		res := &auth.RegResponse{Result: "phone number is empty"}
+		return res, status.Error(codes.InvalidArgument, "phone number is empty")
+	}
+	v := validator.New()
+	data2.ValidateNumber(v, input.PhoneNumber)
+	if !v.Valid() {
+		res := &auth.RegResponse{Result: "phone number is not valid"}
+		return res, status.Error(codes.InvalidArgument, "phone number is not valid")
+	}
+	user, err := authServer.Models.Users.GetByNumber(input.PhoneNumber)
+	if err != nil {
+		if errors.Is(err, data2.ErrRecordNotFound) {
+			res := &auth.RegResponse{Result: "phone number is not registered"}
+			return res, status.Error(codes.InvalidArgument, "phone number is not registered")
+		} else {
+			res := &auth.RegResponse{Result: "internal"}
+			return res, status.Error(codes.Internal, InternalServerErr)
+		}
+	}
+	if user.Activated {
+		res := &auth.RegResponse{Result: "user is already activated"}
+		return res, status.Error(codes.AlreadyExists, "user is already activated")
+	}
+	err = authServer.sendSms(ctx, input.PhoneNumber)
+	if err != nil {
+		res := &auth.RegResponse{Result: "internal"}
+		return res, status.Error(codes.Internal, InternalServerErr)
+	}
+	res := &auth.RegResponse{Result: "sms sent"}
 	return res, nil
 }

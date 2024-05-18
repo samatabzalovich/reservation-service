@@ -27,6 +27,8 @@ var (
 	ErrBadRequest     = errors.New("bad request")
 	ErrInternal       = errors.New("data server error")
 	ErrAuthentication = errors.New("authentication failed")
+	ErrNoProvidedServiceInThatInstitution = errors.New("no provided service in that institution")
+	ErrNoInstId = errors.New("no institution id")
 )
 
 func (app *Config) readJSON(w http.ResponseWriter, r *http.Request, data any) error {
@@ -178,4 +180,6 @@ func (app *Config) sendGetRequest(endpoint string, output any) error{
 	}
 	return nil
 }
+
+
 

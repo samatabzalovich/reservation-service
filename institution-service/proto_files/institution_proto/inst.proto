@@ -101,6 +101,7 @@ service InstitutionService {
     rpc GetForToken(GetInstForTokenRequest) returns (Institution) {}
     rpc GetInstitutionsForOwner(GetInstitutionsByIdRequest) returns (InstitutionsResponse) {}
     rpc GetInstitutionForEmployee(GetInstitutionsByIdRequest) returns (Institution) {}
+    rpc GetInstitutionsForUserEmployee(GetInstitutionsByIdRequest) returns (InstitutionsResponse) {}
 }
 
 service CategoryService {

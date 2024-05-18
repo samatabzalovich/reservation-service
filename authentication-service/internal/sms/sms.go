@@ -6,36 +6,36 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
-	"strconv"
+	"strings"
 )
 
-func NewMessageService(url string, apiKey string) *MessageService {
+func NewMessageService(url string) *MessageService {
 	return &MessageService{
 		Url:    url,
-		ApiKey: apiKey,
 	}
 }
 
 type MessageService struct {
 	Url    string
-	ApiKey string
 }
 
 type Sms struct {
-	Recipient string `json:"recipient"`
-	Text      string `json:"text"`
+	ChatID  string `json:"chatId"`
+	Message string `json:"message"`
 }
 
-func (service *MessageService) SendSmsCode(phone string, code int) error {
+func (service *MessageService) SendSmsCodeAPI(phone string, code int) error {
+	// remove + from phone number
+	cleanedPhone := strings.ReplaceAll(phone, "+", "")
 	sms, err := service.toJson(Sms{
-		Recipient: phone,
-		Text:      "Your code for ReserveHUB is " + strconv.Itoa(code),
+		ChatID:  cleanedPhone + "@c.us",
+		Message: "Your code for ReserveHUB is " + fmt.Sprintf("*%d*", code),
 	})
 	if err != nil {
 		return err
 	}
 	// Create a new POST request with the JSON data
-	req, err := http.NewRequest("POST", fmt.Sprintf("https://%s/Message/SendSmsMessage?apiKey=%s", service.Url, service.ApiKey), bytes.NewBuffer(sms))
+	req, err := http.NewRequest("POST", service.Url, bytes.NewBuffer(sms))
 	if err != nil {
 		return err
 	}

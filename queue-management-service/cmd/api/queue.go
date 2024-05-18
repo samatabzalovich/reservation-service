@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"queue-managemant-service/internal/data"
 	"strconv"
+	"time"
 )
 
 func (app *Config) CallNextClient(w http.ResponseWriter, r *http.Request) {
@@ -37,7 +38,7 @@ func (app *Config) CallNextClient(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	val, err := app.GetQueueLength(service.ID, r.Context())
+	val, err := app.GetQueueLength(service.ID)
 
 	if err != nil {
 		app.errorJson(w, err)
@@ -45,7 +46,7 @@ func (app *Config) CallNextClient(w http.ResponseWriter, r *http.Request) {
 	}
 
 	app.hub.Broadcast <- &Message{
-		RoomID:  strconv.FormatInt(input.ServiceID, 10),
+		RoomID:  app.GetServiceRoom(input.ServiceID),
 		Service: service,
 		Status:  "called",
 		Content: map[string]any{
@@ -53,16 +54,24 @@ func (app *Config) CallNextClient(w http.ResponseWriter, r *http.Request) {
 		},
 		UserID: queue.ClientID,
 	}
+
+	err = app.Redis.Set(r.Context(), app.GetUserRoom(queue.ClientID), input.MessageForClient, 10*60*time.Second).Err()
+	if err != nil {
+		app.errorJson(w, err)
+		return
+	}
 	app.hub.Broadcast <- &Message{
-		RoomID:  strconv.FormatInt(queue.ClientID, 10),
+		RoomID:  app.GetUserRoom(queue.ClientID),
 		Service: service,
-		Status:  "called",
+		Status:  "messageForClient",
 		Content: map[string]any{
 			"peopleLeft": val,
+			"queue":      queue,
 		},
 		UserID:           queue.ClientID,
 		MessageForClient: input.MessageForClient,
 	}
+
 	queue.QueueStatus = "called"
 	app.writeJSON(w, http.StatusOK, map[string]any{"message": "Client called", "clientId": queue.ClientID, "queuePosition": queue.Position, "peopleInQueue": val, "queueId": queue.ID})
 }
@@ -180,38 +189,62 @@ func (app *Config) UpdateQueueStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if queue.QueueStatus == "completed" {
-		app.hub.Unregister <- &Client{
-			ID:     queue.ClientID,
-			RoomID: strconv.FormatInt(queue.ServiceID, 10),
-		}
-		app.hub.Unregister <- &Client{
-			ID:     queue.ClientID,
-			RoomID: strconv.FormatInt(queue.ClientID, 10),
-		}
+	val, err := app.GetQueueLength(queue.ServiceID)
+	if err != nil {
+		app.errorJson(w, err)
+		return
+	}
+	queueRes := &QueueRes{
+		Queue:      queue,
+		PeopleLeft: val,
+	}
+	app.hub.Broadcast <- &Message{
+		RoomID:  app.GetServiceRoom(queue.ServiceID),
+		Status:  queue.QueueStatus,
+		Content: queueRes,
+		UserID:  queue.ClientID,
 	}
 
-	if queue.QueueStatus == "completed" || queue.QueueStatus == "cancelled" {
-		err = app.DecreaseQueueLength(queue.ServiceID, r.Context())
+	if queue.QueueStatus == "completed" {
+		// app.hub.Unregister <- &Client{ //TODO: check if this is needed
+		// 	ID:     queue.ClientID,
+		// 	RoomID: app.GetServiceRoom(queue.ServiceID),
+		// }
+		// app.hub.Unregister <- &Client{
+		// 	ID:     queue.ClientID,
+		// 	RoomID: app.GetUserRoom(queue.ClientID),
+		// }
+		_, err := app.Redis.Del(r.Context(), app.GetUserRoom(queue.ClientID)).Result()
 		if err != nil {
 			app.errorJson(w, err)
 			return
 		}
 	}
-	val, err := app.GetQueueLength(queue.ServiceID, r.Context())
-	if err != nil {
-		app.errorJson(w, err)
-		return
-	}
-	app.hub.Broadcast <- &Message{
-		RoomID: strconv.FormatInt(queue.ClientID, 10),
-		Status: queue.QueueStatus,
-		Content: map[string]any{
-			"queue":      queue,
-			"peopleLeft": val,
-		},
-		UserID: queue.ClientID,
-	}
 
 	app.writeJSON(w, http.StatusOK, queue)
+}
+
+
+func (app *Config) GetQueueNumberForClientInInstitution(w http.ResponseWriter, r *http.Request) {
+	clientId, err := app.readIntParam(r, "clientId")
+	if err != nil {
+		app.errorJson(w, err, http.StatusBadRequest)
+		return
+	}
+	instId, err := app.readIntFromUrl(r.URL.Query(), "instId", 0)
+	if err != nil {
+		app.errorJson(w, err, http.StatusBadRequest)
+		return
+	}
+	employeeId, err := app.readIntFromUrl(r.URL.Query(), "employeeId", 0)
+	if err != nil {
+		app.errorJson(w, err, http.StatusBadRequest)
+		return
+	}
+	count, err := app.Models.Queue.GetQueueForClientInInstitution(clientId, instId, employeeId)
+	if err != nil {
+		app.errorJson(w, err, http.StatusInternalServerError)
+		return
+	}
+	app.writeJSON(w, http.StatusOK, map[string]int{"count": count})
 }

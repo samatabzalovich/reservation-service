@@ -17,7 +17,7 @@ services:
       AUTH_SERVICE: "authentication-service:50001"
       STAFF_SERVICE_HOST_WITHSLASHATTHEEND: "staff-service/"
       RABBITMQ_HOST: "amqp://guest:guest@rabbitmq"
-      INSTITUTION_SERVICE: "institution-service:50001"
+      INSTITUTION_SERVICE: "institution-service:50002"
 
 
   authentication-service:
@@ -36,6 +36,7 @@ services:
       # REDIS_ADDR: "reserve-hub-cache-redis.owhyr8.clustercfg.use1.cache.amazonaws.com:6379"
       DSN: "host=postgres port=5432 user=postgres password=190704Samat dbname=reserveHub sslmode=disable timezone=UTC connect_timeout=5"
       REDIS_ADDR: "redis:6379"
+      SMS_URL: "https://7103.api.greenapi.com/waInstance7103936689/sendMessage/1ff5dea20a3b44448069f001facf63119d2aa20278a344ce9c"
   institution-service:
     build:
       context: ./../institution-service
@@ -63,7 +64,8 @@ services:
     environment:
       DSN: "host=postgres port=5432 user=postgres password=190704Samat dbname=reserveHub sslmode=disable timezone=UTC connect_timeout=5"
       AUTH_SERVICE: "authentication-service:50001"
-      INSTITUTION_SERVICE: "institution-service:50001"
+      INSTITUTION_SERVICE: "institution-service:50002"
+      BASE_PATH: "/staff-services-host"
   appointment-service:
       build:
         context: ./../appointment-service
@@ -79,6 +81,7 @@ services:
         AUTH_SERVICE: "authentication-service:50001"
         STAFF_SERVICE_HOST_WITHSLASHATTHEEND: "staff-service/"
         RABBITMQ_HOST: "amqp://guest:guest@rabbitmq"
+        BASE_PATH: "/appointment-service"
 
   notification-service:
       build:
@@ -109,10 +112,10 @@ services:
         DSN: "host=postgres port=5432 user=postgres password=190704Samat dbname=reserveHub sslmode=disable timezone=UTC connect_timeout=5"
         REDIS_HOST: "redis"
         REDIS_PORT: "6379"
-        staff_service_host: "staff-service/"
+        staff_service_host: "staff-service:8082/staff-services-host/"
         AUTH_SERVICE: "authentication-service:50001"
         RABBITMQ_HOST: "amqp://guest:guest@rabbitmq"
-
+        BASE_PATH: "/queue-service"
 
 
   postgres:
@@ -150,3 +153,27 @@ services:
       replicas: 1
     volumes:
       - ./db-data/redis/:/data/
+
+
+
+# aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin  982796488014.dkr.ecr.us-east-1.amazonaws.com
+
+# docker tag project-broker-service 982796488014.dkr.ecr.us-east-1.amazonaws.com/reserve-hub:latest-1-broker-with-hit
+# docker tag project-authentication-service 982796488014.dkr.ecr.us-east-1.amazonaws.com/reserve-hub:latest-2
+# docker tag project-institution-service 982796488014.dkr.ecr.us-east-1.amazonaws.com/reserve-hub:institution-service
+# docker tag project-staff-service 982796488014.dkr.ecr.us-east-1.amazonaws.com/reserve-hub:staff-service
+# docker tag project-appointment-service 982796488014.dkr.ecr.us-east-1.amazonaws.com/reserve-hub:appointment-service
+# docker tag project-notification-service 982796488014.dkr.ecr.us-east-1.amazonaws.com/reserve-hub:notification-service
+# docker tag project-queue-service 982796488014.dkr.ecr.us-east-1.amazonaws.com/reserve-hub:queue-service
+
+# docker push 982796488014.dkr.ecr.us-east-1.amazonaws.com/reserve-hub:latest-1-broker-with-hit
+# docker push 982796488014.dkr.ecr.us-east-1.amazonaws.com/reserve-hub:institution-service
+# docker push 982796488014.dkr.ecr.us-east-1.amazonaws.com/reserve-hub:staff-service
+# docker push 982796488014.dkr.ecr.us-east-1.amazonaws.com/reserve-hub:appointment-service
+# docker push 982796488014.dkr.ecr.us-east-1.amazonaws.com/reserve-hub:notification-service
+# docker push 982796488014.dkr.ecr.us-east-1.amazonaws.com/reserve-hub:queue-service
+# docker push 982796488014.dkr.ecr.us-east-1.amazonaws.com/reserve-hub:latest-9
+# docker push 982796488014.dkr.ecr.us-east-1.amazonaws.com/reserve-hub:latest-10
+
+# docker push 982796488014.dkr.ecr.us-east-1.amazonaws.com/reserve-hub:latest-2
+# docker push 982796488014.dkr.ecr.us-east-1.amazonaws.com/reserve-hub:latest-3
