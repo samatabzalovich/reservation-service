@@ -137,6 +137,10 @@ func(app *Config) distributeTimeSlots(start, end, breakStart, breakEnd time.Time
 	if numSlots == 1 {
 		gapPerSlot = 0
 	} else {
+		if numSlots == 0 {
+			numSlots = 1
+			return nil
+		}
 		gapPerSlot = gapTime / numSlots
 	}
 

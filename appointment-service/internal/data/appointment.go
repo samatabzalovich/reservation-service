@@ -15,16 +15,18 @@ const (
 )
 
 type Appointment struct {
-	ID          int64    `json:"id"`
-	ClientID    int      `json:"client_id"`
-	InstId      int      `json:"inst_id"`
-	EmployeeID  int      `json:"employee_id"`
-	ServiceID   int      `json:"service_id"`
-	StartTime   DateTime `json:"start_time"`
-	EndTime     DateTime `json:"end_time"`
-	IsCancelled bool     `json:"is_cancelled"`
-	CreatedAt   DateTime `json:"created_at"`
-	UpdatedAt   DateTime `json:"updated_at"`
+	ID           int64    `json:"id"`
+	ClientID     int      `json:"client_id"`
+	InstId       int      `json:"inst_id"`
+	EmployeeID   int      `json:"employee_id"`
+	ServiceID    int      `json:"service_id"`
+	StartTime    DateTime `json:"start_time"`
+	EndTime      DateTime `json:"end_time"`
+	IsCancelled  bool     `json:"is_cancelled"`
+	ServiceName  string   `json:"serviceName"`
+	ServiceImage string   `json:"serviceImage"`
+	CreatedAt    DateTime `json:"created_at"`
+	UpdatedAt    DateTime `json:"updated_at"`
 }
 
 type EmployeeSchedule struct {
@@ -191,8 +193,8 @@ func (m AppointmentModel) Insert(appointment *Appointment) error {
 
 func (m AppointmentModel) GetAllForInst(instId int64) ([]*Appointment, error) {
 	query := `SELECT 
-		id, user_id, institution_id, employee_id, service_id, start_time, end_time, is_canceled, created_at, updated_at
-	 FROM appointments WHERE institution_id = $1`
+		a.id, a.user_id, a.institution_id, a.employee_id, a.service_id, a.start_time, a.end_time, a.is_canceled, a.created_at, a.updated_at, s.name, s.photo_url
+	 FROM appointments a JOIN services s ON a.service_id = s.id WHERE a.institution_id = $1`
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	rows, err := m.DB.QueryContext(ctx, query, instId)
@@ -218,6 +220,8 @@ func (m AppointmentModel) GetAllForInst(instId int64) ([]*Appointment, error) {
 			&appointment.IsCancelled,
 			&createdAt,
 			&updatedAt,
+			&appointment.ServiceName,
+			&appointment.ServiceImage,
 		)
 		if err != nil {
 			return nil, err
@@ -235,7 +239,8 @@ func (m AppointmentModel) GetAllForInst(instId int64) ([]*Appointment, error) {
 }
 
 func (m AppointmentModel) GetById(id int64) (*Appointment, error) {
-	query := `SELECT id, user_id, institution_id, employee_id, service_id, start_time, end_time, is_canceled, created_at, updated_at FROM appointments WHERE id = $1`
+	query := `SELECT a.id, user_id, a.institution_id, employee_id, service_id, start_time, end_time, is_canceled, a.created_at, a.updated_at, s.name, s.photo_url 
+FROM appointments a JOIN services s on a.service_id = s.id WHERE a.id = $1`
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	row := m.DB.QueryRowContext(ctx, query, id)
@@ -255,6 +260,8 @@ func (m AppointmentModel) GetById(id int64) (*Appointment, error) {
 		&appointment.IsCancelled,
 		&createdAt,
 		&updatedAt,
+		&appointment.ServiceName,
+		&appointment.ServiceImage,
 	)
 	if err != nil {
 		return nil, err
@@ -296,8 +303,8 @@ func (m AppointmentModel) Delete(id int64) error {
 
 func (m AppointmentModel) GetAllForClient(clientId int64) ([]*Appointment, error) {
 	query := `SELECT 
-		id, user_id, institution_id, employee_id, service_id, start_time, end_time, is_canceled, created_at, updated_at
-	 FROM appointments WHERE user_id = $1`
+		a.id, a.user_id, a.institution_id, a.employee_id, a.service_id, a.start_time, a.end_time, a.is_canceled, a.created_at, a.updated_at, s.name, s.photo_url
+	 FROM appointments a JOIN services s on a.service_id = s.id   WHERE a.user_id = $1`
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	rows, err := m.DB.QueryContext(ctx, query, clientId)
@@ -323,6 +330,8 @@ func (m AppointmentModel) GetAllForClient(clientId int64) ([]*Appointment, error
 			&appointment.IsCancelled,
 			&createdAt,
 			&updatedAt,
+			&appointment.ServiceName,
+			&appointment.ServiceImage,
 		)
 		if err != nil {
 			return nil, err
@@ -341,8 +350,8 @@ func (m AppointmentModel) GetAllForClient(clientId int64) ([]*Appointment, error
 
 func (m AppointmentModel) GetAllForEmployee(employeeId int64) ([]*Appointment, error) {
 	query := `SELECT 
-		id, user_id, institution_id, employee_id, service_id, start_time, end_time, is_canceled, created_at, updated_at
-	 FROM appointments WHERE employee_id = $1`
+		a.id, a.user_id, a.institution_id, a.employee_id, a.service_id, a.start_time, a.end_time, a.is_canceled, a.created_at,a.updated_at, s.name, s.photo_url
+	 FROM appointments a JOIN services s on a.service_id = s.id  WHERE a.employee_id = $1`
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	rows, err := m.DB.QueryContext(ctx, query, employeeId)
@@ -368,6 +377,8 @@ func (m AppointmentModel) GetAllForEmployee(employeeId int64) ([]*Appointment, e
 			&appointment.IsCancelled,
 			&createdAt,
 			&updatedAt,
+			&appointment.ServiceName,
+			&appointment.ServiceImage,
 		)
 		if err != nil {
 			return nil, err

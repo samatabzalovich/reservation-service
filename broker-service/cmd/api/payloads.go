@@ -65,4 +65,5 @@ type Category struct {
 	Id          int64  `json:"id,omitempty"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
+	PhotoUrl    string `json:"photoUrl,omitempty"`
 }

@@ -3,6 +3,7 @@ package main
 import (
 	auth "appointment-service/proto_files/auth_proto"
 	"context"
+	"fmt"
 	"time"
 
 	"google.golang.org/grpc"
@@ -10,7 +11,7 @@ import (
 )
 
 func (app *Config) AuthenticateViaGrpc(token string) (*User, error) {
-	conn, err := grpc.Dial("authentication-service:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	conn, err := grpc.Dial(fmt.Sprintf("%s:50001", app.authHost), grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
 
 		return nil, err

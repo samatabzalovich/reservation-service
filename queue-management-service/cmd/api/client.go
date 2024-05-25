@@ -18,6 +18,7 @@ type Message struct {
 	RoomID           string `json:"roomId"`
 	UserID           int64  `json:"userId"`
 	MessageForClient string `json:"messageForClient,omitempty"`
+	Users			[]int64 `json:"users,omitempty"`
 }
 
 func (c *Client) writeMessage() {

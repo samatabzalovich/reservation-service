@@ -250,3 +250,30 @@ func (q QueueModel) GetQueueForClientInInstitution(clientId, instId, employeeId 
 	}
 	return length, nil
 }
+
+
+func (q QueueModel) GetUsersFromQueue(serviceId int64) ([]int64, error) {
+	stmt := `SELECT user_id FROM queue WHERE service_id = $1 AND status != 'completed' AND status != 'cancelled' ORDER BY position ASC`
+	rows, err := db.Query(stmt, serviceId)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var users []int64
+	for rows.Next() {
+		var user int64
+		err := rows.Scan(&user)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return users, nil
+}

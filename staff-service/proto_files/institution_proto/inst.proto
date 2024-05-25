@@ -32,6 +32,7 @@ message InstitutionCategory {
     int64 id = 1;
     string name = 2;
     string description = 3;
+    string photo_url = 4;
 }
 message GetInstitutionCategoriesRequest{}
 
@@ -107,4 +108,7 @@ service InstitutionService {
 service CategoryService {
     rpc GetInstitutionCategories(GetInstitutionCategoriesRequest) returns (CategoryResponse) {}
     rpc CreateCategory(InstitutionCategory) returns (InstitutionCategory) {}
+    rpc UpdateCategory(InstitutionCategory) returns (InstitutionCategory) {}
+    rpc DeleteCategory(InstitutionCategory) returns (InstitutionCategory) {}
+    rpc GetCategoriesForInstitution(GetInstitutionsByIdRequest) returns (CategoryResponse) {}
 }

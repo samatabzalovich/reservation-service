@@ -35,9 +35,12 @@ func (app *Config) routes() http.Handler {
 	mux.Route("/category", func(r chi.Router) {
 		r.Use(app.Authenticate)
 		r.Post("/", app.CreateCategory)
+		r.Delete("/{catId}", app.DeleteCategory)
+		r.Put("/", app.UpdateCategory)
 	})
 	mux.Get("/listInstitutions", app.ListInstitutions)
 	mux.Get("/getCategories", app.GetCategories)
+	mux.Get("/getInstitutionCategories/{instId}", app.GetCategoriesForInstitution)
 
 	return mux
 }

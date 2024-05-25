@@ -34,7 +34,7 @@ func (app *Config) routes() http.Handler {
 		r.Get("/device-token/{token}", app.GetByToken)
 		r.Get("/device-token/user/{id}", app.GetByUserID)
 		r.Put("/device-token", app.Update)
-		r.Delete("/device-token/{token}", app.Delete)
+		r.Delete("/device-token/{id}", app.Delete)
 	})
 	mux.NotFound(app.NotFound)
 	return mux

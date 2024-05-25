@@ -24,6 +24,7 @@ func New(dbPool *sql.DB) Models {
 
 	return Models{
 		Queue: QueueModel{DB: db},
+		Employee: EmployeeInfoModel{DB: db},
 	}
 }
 
@@ -41,5 +42,9 @@ type Models struct {
 		GetLastForClient(clientId int64) (*Queue, error)
 		GetQueueLength(serviceId int64) (int, error)
 		GetQueueForClientInInstitution(clientId, instId, employeeId int64) (int, error)
+		GetUsersFromQueue(serviceId int64) ([]int64, error)
+	}
+	Employee interface {
+		GetEmployeeForServiceAndUserID(serviceId, userId int64) (int64, error)
 	}
 }

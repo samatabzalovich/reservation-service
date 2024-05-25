@@ -16,6 +16,8 @@ func (app *Config) authUnaryInterceptor(ctx context.Context, req interface{}, in
 		"/inst.InstitutionService/UpdateInstitution",
 		"/inst.InstitutionService/DeleteInstitution",
 		"/inst.CategoryService/CreateCategory",
+		"/inst.CategoryService/UpdateCategory",
+		"/inst.CategoryService/DeleteCategory",
 	}
 
 	if isInProtectedMethods(info.FullMethod, protectedMethods) {

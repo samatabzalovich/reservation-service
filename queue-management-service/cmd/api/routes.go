@@ -29,6 +29,7 @@ func (app *Config) routes() http.Handler {
     mux.Route(basePath + "/queue", func(r chi.Router) {
         r.Use(app.requireAuthentication)
         r.Use(app.requireActivatedUser)
+        r.Get("/get-all-client", app.GetQueuesForClient)
         r.Post("/call-next", app.CallNextClient)
         r.Get("/join/{serviceId}", app.JoinQueueForServiceRoom)
         r.Get("/amount/{serviceId}", app.JoinQueueForPeopleAmountRoom)

@@ -5,8 +5,6 @@ import (
 	"strings"
 )
 
-
-
 func (app *Config) requireActivatedUser(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

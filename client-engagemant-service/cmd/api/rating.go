@@ -8,12 +8,9 @@ import (
 
 func (app *Config) LeaveFeedbackForAppointment(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		AppointmentId int64  `json:"appointment_id"`
+		AppointmentId int64  `json:"appointmentId"`
 		Rating        int    `json:"rating"`
 		Comment       string `json:"comment"`
-		EmployeeID    int64
-		ClientID      int64 `json:"client_id"`
-		InstitutionID int64
 	}
 
 	err := app.readJSON(w, r, &input)
@@ -23,7 +20,24 @@ func (app *Config) LeaveFeedbackForAppointment(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	feedback, err := data.NewRating(input.AppointmentId, input.EmployeeID, input.ClientID, input.InstitutionID, input.Rating, input.Comment)
+	user, err := app.contextGetUser(r)
+	if err != nil {
+		app.errorJson(w, err)
+		return
+	}
+
+	ids, err := app.Models.Rating.GetServiceIdAndInstIdToRatingAppointment(input.AppointmentId, user.ID)
+	if err != nil {
+		if errors.Is(err, data.ErrInvalidAppointmentId) {
+			app.errorJson(w, err, http.StatusBadRequest)
+			return
+		}
+
+		app.errorJson(w, err)
+		return
+	}
+
+	feedback, err := data.NewRating(input.AppointmentId, ids.EmployeeId, user.ID, ids.InstitutionId, input.Rating, input.Comment, ids.ServiceId)
 
 	if err != nil {
 		app.errorJson(w, err, http.StatusBadRequest)
@@ -33,12 +47,19 @@ func (app *Config) LeaveFeedbackForAppointment(w http.ResponseWriter, r *http.Re
 	err = app.Models.Rating.Insert(feedback)
 
 	if err != nil {
-		if err == data.ErrInvalidField {
+		if errors.Is(err, data.ErrInvalidField) {
+			app.errorJson(w, err, http.StatusBadRequest)
+			return
+		}
+		if errors.Is(err, data.ErrRatingAlreadyExists) {
 			app.errorJson(w, err, http.StatusBadRequest)
 			return
 		}
 		app.errorJson(w, err)
+		return
 	}
+
+	app.writeJSON(w, http.StatusCreated, feedback)
 }
 
 func (app *Config) GetFeedbackForAppointment(w http.ResponseWriter, r *http.Request) {
@@ -61,7 +82,6 @@ func (app *Config) GetFeedbackForAppointment(w http.ResponseWriter, r *http.Requ
 	}
 
 	app.writeJSON(w, http.StatusOK, feedback)
-
 }
 
 func (app *Config) GetFeedbacksForEmployee(w http.ResponseWriter, r *http.Request) {
@@ -97,7 +117,7 @@ func (app *Config) GetFeedbacksForClient(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusOK, feedbacks)
+	err = app.writeJSON(w, http.StatusOK, map[string][]*data.Rating{"feedbacks": feedbacks})
 }
 
 func (app *Config) GetFeedbacksForInstitution(w http.ResponseWriter, r *http.Request) {
@@ -115,7 +135,7 @@ func (app *Config) GetFeedbacksForInstitution(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusOK, feedbacks)
+	err = app.writeJSON(w, http.StatusOK, map[string][]*data.Rating{"feedbacks": feedbacks})
 }
 
 func (app *Config) GetAverageRatingForEmployee(w http.ResponseWriter, r *http.Request) {
@@ -181,24 +201,6 @@ func (app *Config) GetAverageRatingForClient(w http.ResponseWriter, r *http.Requ
 	}
 
 	avgRating, err := app.Models.Rating.GetAverageRatingForClient(id)
-
-	if err != nil {
-		app.errorJson(w, err)
-		return
-	}
-
-	err = app.writeJSON(w, http.StatusOK, map[string]float64{"average_rating": avgRating})
-}
-
-func (app *Config) GetAverageRatingForAppointment(w http.ResponseWriter, r *http.Request) {
-	id, err := app.readIntParam(r, "id")
-
-	if err != nil {
-		app.errorJson(w, err)
-		return
-	}
-
-	avgRating, err := app.Models.Rating.GetAverageRatingForAppointment(id)
 
 	if err != nil {
 		app.errorJson(w, err)
@@ -329,6 +331,11 @@ func (app *Config) UpdateFeedback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if input.Rating < 1 || input.Rating > 10 {
+		app.errorJson(w, data.ErrRatingMustBe1, http.StatusBadRequest)
+		return
+	}
+
 	feedback := &data.Rating{
 		ID:       input.ID,
 		Rating:   input.Rating,
@@ -344,7 +351,10 @@ func (app *Config) UpdateFeedback(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		app.errorJson(w, err)
+		return
 	}
+	app.writeJSON(w, http.StatusOK, map[string]string{"message": "Feedback updated successfully"})
+
 }
 
 func (app *Config) DeleteFeedback(w http.ResponseWriter, r *http.Request) {
@@ -359,5 +369,8 @@ func (app *Config) DeleteFeedback(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		app.errorJson(w, err)
+		return
 	}
+
+	app.writeJSON(w, http.StatusOK, map[string]string{"message": "Feedback deleted successfully"})
 }

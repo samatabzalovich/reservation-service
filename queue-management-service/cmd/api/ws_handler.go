@@ -28,30 +28,13 @@ func (app *Config) JoinQueueForServiceRoom(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// check if room exists
-	_, ok := app.hub.Rooms[req.RoomID]
-	if !ok {
-		app.hub.Rooms[req.RoomID] = &Room{
-			ID:      req.RoomID,
-			Clients: make(map[int64]*Client),
-		}
-	}
+	
 	user, err := app.contextGetUser(r)
 	if err != nil {
 		app.errorJson(w, err, http.StatusUnauthorized)
 		return
 	}
-	conn, err := app.upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		app.errorJson(w, err)
-		return
-	}
 	var queue *data.Queue
-	length, err := app.GetQueueLength(id)
-	if err != nil {
-		app.errorJson(w, err)
-		return
-	}
 	if user.Type == "client" {
 		queue, err = app.Models.Queue.GetLastForClient(user.ID)
 		if err != nil {
@@ -61,7 +44,6 @@ func (app *Config) JoinQueueForServiceRoom(w http.ResponseWriter, r *http.Reques
 					app.errorJson(w, err)
 					return
 				}
-				length++
 			} else {
 				app.errorJson(w, err)
 				return
@@ -69,12 +51,29 @@ func (app *Config) JoinQueueForServiceRoom(w http.ResponseWriter, r *http.Reques
 		}
 
 	}
-
+	users,err := app.Models.Queue.GetUsersFromQueue(service.ID)
+	if err != nil {
+		app.errorJson(w, err)
+		return
+	}
 	queueRes := &QueueRes{
 		Queue:      queue,
-		PeopleLeft: length,
+		PeopleLeft: len(users),
 	}
-
+	
+	conn, err := app.upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		app.errorJson(w, err)
+		return
+	}
+	// check if room exists
+	_, ok := app.hub.Rooms[req.RoomID]
+	if !ok {
+		app.hub.Rooms[req.RoomID] = &Room{
+			ID:      req.RoomID,
+			Clients: make(map[int64]*Client),
+		}
+	}
 	sentMessage := false
 	if user.Type == "client" {
 		cl := &Client{
@@ -111,6 +110,7 @@ func (app *Config) JoinQueueForServiceRoom(w http.ResponseWriter, r *http.Reques
 					UserID:           user.ID,
 					Content:          queueRes,
 					MessageForClient: messageForClient,
+					Users: 		  users,
 				}
 				sentMessage = true
 			}
@@ -128,6 +128,7 @@ func (app *Config) JoinQueueForServiceRoom(w http.ResponseWriter, r *http.Reques
 		RoomID:  req.RoomID,
 		UserID:  user.ID,
 		Content: queueRes,
+		Users: users,
 	}
 
 	serviceRoom := &Client{
@@ -147,13 +148,14 @@ func (app *Config) JoinQueueForServiceRoom(w http.ResponseWriter, r *http.Reques
 
 func (app *Config) JoinQueueForPeopleAmountRoom(w http.ResponseWriter, r *http.Request) {
 	var req JoinRoomReq
-	id, err := app.readIntParam(r, "serviceId")
+	serviceId, err := app.readIntParam(r, "serviceId")
 	if err != nil {
 		app.errorJson(w, err, http.StatusBadRequest)
 		return
 	}
-	req.RoomID = app.GetServiceRoom(id)
-	service, err := app.GetServiceById(id)
+	
+	req.RoomID = app.GetServiceRoom(serviceId)
+	service, err := app.GetServiceById(serviceId)
 	if err != nil {
 		app.errorJson(w, err, http.StatusForbidden)
 		return
@@ -178,13 +180,13 @@ func (app *Config) JoinQueueForPeopleAmountRoom(w http.ResponseWriter, r *http.R
 		return
 	}
 	var queue *data.Queue
-	length, err := app.GetQueueLength(id)
+	users, err := app.Models.Queue.GetUsersFromQueue(serviceId)
 	if err != nil {
 		app.errorJson(w, err)
 		return
 	}
 	if user.Type == "client" {
-		queue, err = app.Models.Queue.GetLastForClient(id)
+		queue, err = app.Models.Queue.GetLastForClient(user.ID)
 		if err != nil && !errors.Is(err, data.ErrRecordNotFound) {
 			app.errorJson(w, err)
 			return
@@ -192,7 +194,7 @@ func (app *Config) JoinQueueForPeopleAmountRoom(w http.ResponseWriter, r *http.R
 	}
 	queueRes := &QueueRes{
 		Queue:      queue,
-		PeopleLeft: length,
+		PeopleLeft: len(users),
 	}
 
 	sentMessage := false
@@ -231,6 +233,7 @@ func (app *Config) JoinQueueForPeopleAmountRoom(w http.ResponseWriter, r *http.R
 					UserID:           user.ID,
 					Content:          queueRes,
 					MessageForClient: messageForClient,
+					Users: 		  users,
 				}
 				sentMessage = true
 			}
@@ -248,6 +251,7 @@ func (app *Config) JoinQueueForPeopleAmountRoom(w http.ResponseWriter, r *http.R
 		RoomID:  req.RoomID,
 		UserID:  user.ID,
 		Content: queueRes,
+		Users: users,
 	}
 
 	serviceRoom := &Client{

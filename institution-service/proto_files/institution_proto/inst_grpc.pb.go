@@ -405,8 +405,11 @@ var InstitutionService_ServiceDesc = grpc.ServiceDesc{
 }
 
 const (
-	CategoryService_GetInstitutionCategories_FullMethodName = "/inst.CategoryService/GetInstitutionCategories"
-	CategoryService_CreateCategory_FullMethodName           = "/inst.CategoryService/CreateCategory"
+	CategoryService_GetInstitutionCategories_FullMethodName    = "/inst.CategoryService/GetInstitutionCategories"
+	CategoryService_CreateCategory_FullMethodName              = "/inst.CategoryService/CreateCategory"
+	CategoryService_UpdateCategory_FullMethodName              = "/inst.CategoryService/UpdateCategory"
+	CategoryService_DeleteCategory_FullMethodName              = "/inst.CategoryService/DeleteCategory"
+	CategoryService_GetCategoriesForInstitution_FullMethodName = "/inst.CategoryService/GetCategoriesForInstitution"
 )
 
 // CategoryServiceClient is the client API for CategoryService service.
@@ -415,6 +418,9 @@ const (
 type CategoryServiceClient interface {
 	GetInstitutionCategories(ctx context.Context, in *GetInstitutionCategoriesRequest, opts ...grpc.CallOption) (*CategoryResponse, error)
 	CreateCategory(ctx context.Context, in *InstitutionCategory, opts ...grpc.CallOption) (*InstitutionCategory, error)
+	UpdateCategory(ctx context.Context, in *InstitutionCategory, opts ...grpc.CallOption) (*InstitutionCategory, error)
+	DeleteCategory(ctx context.Context, in *InstitutionCategory, opts ...grpc.CallOption) (*InstitutionCategory, error)
+	GetCategoriesForInstitution(ctx context.Context, in *GetInstitutionsByIdRequest, opts ...grpc.CallOption) (*CategoryResponse, error)
 }
 
 type categoryServiceClient struct {
@@ -443,12 +449,42 @@ func (c *categoryServiceClient) CreateCategory(ctx context.Context, in *Institut
 	return out, nil
 }
 
+func (c *categoryServiceClient) UpdateCategory(ctx context.Context, in *InstitutionCategory, opts ...grpc.CallOption) (*InstitutionCategory, error) {
+	out := new(InstitutionCategory)
+	err := c.cc.Invoke(ctx, CategoryService_UpdateCategory_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *categoryServiceClient) DeleteCategory(ctx context.Context, in *InstitutionCategory, opts ...grpc.CallOption) (*InstitutionCategory, error) {
+	out := new(InstitutionCategory)
+	err := c.cc.Invoke(ctx, CategoryService_DeleteCategory_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *categoryServiceClient) GetCategoriesForInstitution(ctx context.Context, in *GetInstitutionsByIdRequest, opts ...grpc.CallOption) (*CategoryResponse, error) {
+	out := new(CategoryResponse)
+	err := c.cc.Invoke(ctx, CategoryService_GetCategoriesForInstitution_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CategoryServiceServer is the server API for CategoryService service.
 // All implementations must embed UnimplementedCategoryServiceServer
 // for forward compatibility
 type CategoryServiceServer interface {
 	GetInstitutionCategories(context.Context, *GetInstitutionCategoriesRequest) (*CategoryResponse, error)
 	CreateCategory(context.Context, *InstitutionCategory) (*InstitutionCategory, error)
+	UpdateCategory(context.Context, *InstitutionCategory) (*InstitutionCategory, error)
+	DeleteCategory(context.Context, *InstitutionCategory) (*InstitutionCategory, error)
+	GetCategoriesForInstitution(context.Context, *GetInstitutionsByIdRequest) (*CategoryResponse, error)
 	mustEmbedUnimplementedCategoryServiceServer()
 }
 
@@ -461,6 +497,15 @@ func (UnimplementedCategoryServiceServer) GetInstitutionCategories(context.Conte
 }
 func (UnimplementedCategoryServiceServer) CreateCategory(context.Context, *InstitutionCategory) (*InstitutionCategory, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateCategory not implemented")
+}
+func (UnimplementedCategoryServiceServer) UpdateCategory(context.Context, *InstitutionCategory) (*InstitutionCategory, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateCategory not implemented")
+}
+func (UnimplementedCategoryServiceServer) DeleteCategory(context.Context, *InstitutionCategory) (*InstitutionCategory, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteCategory not implemented")
+}
+func (UnimplementedCategoryServiceServer) GetCategoriesForInstitution(context.Context, *GetInstitutionsByIdRequest) (*CategoryResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCategoriesForInstitution not implemented")
 }
 func (UnimplementedCategoryServiceServer) mustEmbedUnimplementedCategoryServiceServer() {}
 
@@ -511,6 +556,60 @@ func _CategoryService_CreateCategory_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _CategoryService_UpdateCategory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(InstitutionCategory)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CategoryServiceServer).UpdateCategory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CategoryService_UpdateCategory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CategoryServiceServer).UpdateCategory(ctx, req.(*InstitutionCategory))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CategoryService_DeleteCategory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(InstitutionCategory)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CategoryServiceServer).DeleteCategory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CategoryService_DeleteCategory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CategoryServiceServer).DeleteCategory(ctx, req.(*InstitutionCategory))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CategoryService_GetCategoriesForInstitution_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetInstitutionsByIdRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CategoryServiceServer).GetCategoriesForInstitution(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CategoryService_GetCategoriesForInstitution_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CategoryServiceServer).GetCategoriesForInstitution(ctx, req.(*GetInstitutionsByIdRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // CategoryService_ServiceDesc is the grpc.ServiceDesc for CategoryService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -525,6 +624,18 @@ var CategoryService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateCategory",
 			Handler:    _CategoryService_CreateCategory_Handler,
+		},
+		{
+			MethodName: "UpdateCategory",
+			Handler:    _CategoryService_UpdateCategory_Handler,
+		},
+		{
+			MethodName: "DeleteCategory",
+			Handler:    _CategoryService_DeleteCategory_Handler,
+		},
+		{
+			MethodName: "GetCategoriesForInstitution",
+			Handler:    _CategoryService_GetCategoriesForInstitution_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

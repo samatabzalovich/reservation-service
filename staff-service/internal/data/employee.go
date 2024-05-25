@@ -596,7 +596,7 @@ func (m EmployeeModel) GetEmployeeScheduleAndService(employeeId int64, serviceId
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	var schedule ScheduleForEmployeeTimeSlots
-	err := m.DB.QueryRowContext(ctx, query, employeeId, int(selectedDay.Weekday())).Scan(
+	err := m.DB.QueryRowContext(ctx, query, employeeId, int(selectedDay.Weekday())+1).Scan(
 		&schedule.DayOfWeek,
 		&schedule.StartTime,
 		&schedule.EndTime,
@@ -604,6 +604,7 @@ func (m EmployeeModel) GetEmployeeScheduleAndService(employeeId int64, serviceId
 		&schedule.BreakEndTime,
 	)
 	if err != nil {
+		log.Println("error: ", err)
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrRecordNotFound
 		}

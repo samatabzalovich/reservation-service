@@ -6,8 +6,15 @@ import (
 )
 
 var (
-	ErrInvalidField   = errors.New("invalid field, check the fields you entered and try again")
-	ErrRecordNotFound = errors.New("record not found")
+	ErrInvalidField         = errors.New("invalid field, check the fields you entered and try again")
+	ErrRecordNotFound       = errors.New("record not found")
+	ErrRatingMustBe1        = errors.New("rating must be between 1 and 10")
+	ErrInvalidAppointmentId = errors.New("invalid appointment id")
+	ErrInvalidEmployeeId    = errors.New("invalid employee id")
+	ErrInvalidClientId      = errors.New("invalid client id")
+	ErrInvalidInstitutionId = errors.New("invalid institution id")
+	ErrInvalidServiceId     = errors.New("invalid service id")
+	ErrRatingAlreadyExists  = errors.New("rating already exists for this appointment")
 )
 
 var db *sql.DB
@@ -38,11 +45,11 @@ type Models struct {
 		GetAverageRatingForInstitution(instId int64) (float64, error)
 		GetAverageRatingForService(serviceId int64) (float64, error)
 		GetAverageRatingForClient(clientId int64) (float64, error)
-		GetAverageRatingForAppointment(appointmentId int64) (float64, error)
 		GetAverageRatingForEmployeeService(employeeId, serviceId int64) (float64, error)
 		GetAverageRatingForClientService(clientId, serviceId int64) (float64, error)
 		GetAverageRatingForClientInstitution(clientId, instId int64) (float64, error)
 		GetAverageRatingForClientEmployee(clientId, employeeId int64) (float64, error)
+		GetServiceIdAndInstIdToRatingAppointment(appointmentId, userId int64) (*IdForRating, error)
 	}
 	Comment interface {
 		Insert(c *Comment) error

@@ -26,7 +26,9 @@ func openDB(dsn string) (*sql.DB, error) {
 
 func connectToDB() *sql.DB {
 	dsn := os.Getenv("DSN")
-
+	if dsn == "" {
+		dsn = "postgres://reservehub:190704Samat@reserve-hub-database.cnwmuwismjtn.us-east-1.rds.amazonaws.com:5432/postgres"
+	}
 	for {
 		connection, err := openDB(dsn)
 		if err != nil {

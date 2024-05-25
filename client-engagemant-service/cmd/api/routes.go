@@ -13,7 +13,7 @@ func (app *Config) routes() http.Handler {
 	mux := chi.NewRouter()
 	basePath := os.Getenv("BASE_PATH")
 	if basePath == "" {
-		basePath = "/"
+		basePath = "/analytics-service"
 	}
 
 	// specify who is allowed to connect
@@ -25,8 +25,9 @@ func (app *Config) routes() http.Handler {
 		AllowCredentials: true,
 		MaxAge:           300,
 	}))
-	mux.Get("/health", app.HealthCheck)
+
 	mux.Use(middleware.Heartbeat("/ping"))
+	mux.Get("/health", app.HealthCheck)
 	base := mux.Route(basePath, func(u chi.Router) {
 		u.Route("/comment", func(r chi.Router) {
 			r.Use(app.requireAuthentication)
@@ -45,17 +46,14 @@ func (app *Config) routes() http.Handler {
 	base.Route("/rating", func(r chi.Router) {
 		r.Use(app.requireAuthentication)
 		r.Use(app.requireActivatedUser)
-		//TODO: r.use check for appointment
-		r.Group(func(r chi.Router) {
-			r.Use(app.requireAtLeastOneAppointmentOrQueue)
-			r.Post("/", app.LeaveFeedbackForAppointment)
-		})
+		r.Post("/", app.LeaveFeedbackForAppointment)
+
 		r.Put("/", app.UpdateFeedback)
 		r.Get("/feedback-appointment/{id}", app.GetFeedbackForAppointment)
 		r.Get("/employee/{id}", app.GetFeedbacksForEmployee)
 		r.Get("/client/{id}", app.GetFeedbacksForClient)
 		r.Get("/institution/{id}", app.GetFeedbacksForInstitution)
-		
+
 		r.Delete("/{id}", app.DeleteFeedback)
 	})
 
@@ -65,11 +63,7 @@ func (app *Config) routes() http.Handler {
 		r.Get("/employee/{id}", app.GetAverageRatingForEmployee)
 		r.Get("/client/{id}", app.GetAverageRatingForClient)
 		r.Get("/institution/{id}", app.GetAverageRatingForInstitution)
-		r.Get("/employee-feedback/{id}", app.GetFeedbacksForEmployee)
-		r.Get("/client-feedback/{id}", app.GetFeedbacksForClient)
-		r.Get("/institution-feedback/{id}", app.GetFeedbacksForInstitution)
 		r.Get("/service/{id}", app.GetAverageRatingForService)
-		r.Get("/appointment/{id}", app.GetAverageRatingForAppointment)
 		r.Get("/employee-service/{employee_id}/{service_id}", app.GetAverageRatingForEmployeeService)
 		r.Get("/client-service/{client_id}/{service_id}", app.GetAverageRatingForClientService)
 		r.Get("/client-institution/{client_id}/{institution_id}", app.GetAverageRatingForClientInstitution)

@@ -32,9 +32,9 @@ services:
       mode: replicated
       replicas: 1
     environment:
-      # DSN: "postgres://reservehub:190704Samat@reserve-hub-database.cnwmuwismjtn.us-east-1.rds.amazonaws.com:5432/postgres"
+      DSN: "postgres://reservehub:190704Samat@reserve-hub-database.cnwmuwismjtn.us-east-1.rds.amazonaws.com:5432/postgres"
       # REDIS_ADDR: "reserve-hub-cache-redis.owhyr8.clustercfg.use1.cache.amazonaws.com:6379"
-      DSN: "host=postgres port=5432 user=postgres password=190704Samat dbname=reserveHub sslmode=disable timezone=UTC connect_timeout=5"
+      # DSN: "host=postgres port=5432 user=postgres password=190704Samat dbname=reserveHub sslmode=disable timezone=UTC connect_timeout=5"
       REDIS_ADDR: "redis:6379"
       SMS_URL: "https://7103.api.greenapi.com/waInstance7103936689/sendMessage/1ff5dea20a3b44448069f001facf63119d2aa20278a344ce9c"
   institution-service:
@@ -48,7 +48,8 @@ services:
       mode: replicated
       replicas: 1
     environment:
-      DSN: "host=postgres port=5432 user=postgres password=190704Samat dbname=reserveHub sslmode=disable timezone=UTC connect_timeout=5"
+      # DSN: "host=postgres port=5432 user=postgres password=190704Samat dbname=reserveHub sslmode=disable timezone=UTC connect_timeout=5"
+      DSN: "postgres://reservehub:190704Samat@reserve-hub-database.cnwmuwismjtn.us-east-1.rds.amazonaws.com:5432/postgres"
       AUTH_SERVICE: "authentication-service:50001"
 
   staff-service:
@@ -62,7 +63,8 @@ services:
       mode: replicated
       replicas: 1
     environment:
-      DSN: "host=postgres port=5432 user=postgres password=190704Samat dbname=reserveHub sslmode=disable timezone=UTC connect_timeout=5"
+      # DSN: "host=postgres port=5432 user=postgres password=190704Samat dbname=reserveHub sslmode=disable timezone=UTC connect_timeout=5"
+      DSN: "postgres://reservehub:190704Samat@reserve-hub-database.cnwmuwismjtn.us-east-1.rds.amazonaws.com:5432/postgres"
       AUTH_SERVICE: "authentication-service:50001"
       INSTITUTION_SERVICE: "institution-service:50002"
       BASE_PATH: "/staff-services-host"
@@ -77,26 +79,27 @@ services:
         mode: replicated
         replicas: 1
       environment:
-        DSN: "host=postgres port=5432 user=postgres password=190704Samat dbname=reserveHub sslmode=disable timezone=UTC connect_timeout=5"
+        # DSN: "host=postgres port=5432 user=postgres password=190704Samat dbname=reserveHub sslmode=disable timezone=UTC connect_timeout=5"
+        DSN: "postgres://reservehub:190704Samat@reserve-hub-database.cnwmuwismjtn.us-east-1.rds.amazonaws.com:5432/postgres"
         AUTH_SERVICE: "authentication-service:50001"
-        STAFF_SERVICE_HOST_WITHSLASHATTHEEND: "staff-service/"
+        STAFF_SERVICE_HOST_WITHSLASHATTHEEND: "staff-service:8082/staff-services-host/"
         RABBITMQ_HOST: "amqp://guest:guest@rabbitmq"
-        BASE_PATH: "/appointment-service"
+        BASE_PATH: "/appointment-service-endpoint"
 
-  notification-service:
-      build:
-        context: ./../notification-service
-        dockerfile: ./../notification-service/notification.dockerfile
-      restart: always
-      ports:
-        - "8084:8084"
-      deploy:
-        mode: replicated
-        replicas: 1
-      environment:
-        DSN: "host=postgres port=5432 user=postgres password=190704Samat dbname=reserveHub sslmode=disable timezone=UTC connect_timeout=5"
-        host: "https://sendnotification-4nnknk7h2a-uc.a.run.app"
-        RABBITMQ_HOST: "amqp://guest:guest@rabbitmq"
+  # notification-service:
+  #     build:
+  #       context: ./../notification-service
+  #       dockerfile: ./../notification-service/notification.dockerfile
+  #     restart: always
+  #     ports:
+  #       - "8084:8084"
+  #     deploy:
+  #       mode: replicated
+  #       replicas: 1
+  #     environment:
+  #       DSN: "host=postgres port=5432 user=postgres password=190704Samat dbname=reserveHub sslmode=disable timezone=UTC connect_timeout=5"
+  #       host: "https://sendnotification-4nnknk7h2a-uc.a.run.app"
+  #       RABBITMQ_HOST: "amqp://guest:guest@rabbitmq"
 
   queue-service:
       build:
@@ -109,7 +112,8 @@ services:
         mode: replicated
         replicas: 1
       environment:
-        DSN: "host=postgres port=5432 user=postgres password=190704Samat dbname=reserveHub sslmode=disable timezone=UTC connect_timeout=5"
+        # DSN: "host=postgres port=5432 user=postgres password=190704Samat dbname=reserveHub sslmode=disable timezone=UTC connect_timeout=5"
+        DSN: "postgres://reservehub:190704Samat@reserve-hub-database.cnwmuwismjtn.us-east-1.rds.amazonaws.com:5432/postgres"
         REDIS_HOST: "redis"
         REDIS_PORT: "6379"
         staff_service_host: "staff-service:8082/staff-services-host/"

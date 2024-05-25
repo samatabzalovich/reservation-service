@@ -50,7 +50,7 @@ func (authServer *AuthService) CreateAuthenticationToken(ctx context.Context, re
 
 		return res, status.Error(codes.InvalidArgument, "password does not match")
 	}
-	token, err := authServer.Models.Tokens.New(exist.ID, 24*time.Hour, data2.ScopeAuthentication, 0)
+	token, err := authServer.Models.Tokens.New(exist.ID, 15*24*time.Hour, data2.ScopeAuthentication, 0)
 	if err != nil {
 		res := &auth.TokenResponse{Result: InternalServerErr}
 
@@ -191,7 +191,7 @@ func (authServer *AuthService) ActivateUser(ctx context.Context, req *auth.SmsRe
 				return res, status.Error(codes.Internal, InternalServerErr)
 			}
 		}
-		token, err := authServer.Models.Tokens.New(exist.ID, 24*time.Hour, data2.ScopeAuthentication, 0)
+		token, err := authServer.Models.Tokens.New(exist.ID, 15*24*time.Hour, data2.ScopeAuthentication, 0)
 		if err != nil {
 			res := &auth.TokenResponse{Result: "empty token"}
 			return res, status.Error(codes.Internal, InternalServerErr)
@@ -210,7 +210,7 @@ func (authServer *AuthService) ActivateUser(ctx context.Context, req *auth.SmsRe
 			log.Println(err)
 			return res, status.Error(codes.Internal, InternalServerErr)
 		}
-		token, err := authServer.Models.Tokens.New(exist.ID, 24*time.Hour, data2.ScopeAuthentication, 0)
+		token, err := authServer.Models.Tokens.New(exist.ID, 15*24*time.Hour, data2.ScopeAuthentication, 0)
 		if err != nil {
 			res := &auth.TokenResponse{Result: InternalServerErr}
 			log.Println(err)

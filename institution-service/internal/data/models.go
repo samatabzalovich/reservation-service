@@ -66,6 +66,7 @@ type Models struct {
 		GetAll() ([]*Category, error)
 		Update(category *Category) error
 		Delete(id int64) error
+		GetByInstitution(instId int64) ([]*Category, error)
 	}
 	Institutions interface {
 		Insert(institution *Institution) (int64, error)

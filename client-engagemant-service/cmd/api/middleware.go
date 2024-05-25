@@ -51,43 +51,48 @@ func (app *Config) requireAuthentication(next http.Handler) http.Handler {
 	})
 }
 
-func (app *Config) requireAtLeastOneAppointmentOrQueue(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user, err := app.contextGetUser(r)
-		if err != nil {
-			app.errorJson(w, err, http.StatusUnauthorized)
-			return
-		}
-
-		instId := app.readString(	r.URL.Query(), "instId", "")
-		if instId == "" {
-			app.errorJson(w, ErrNoInstId, http.StatusBadRequest)
-			return
-		}
-
-		employeeId := app.readString(r.URL.Query(), "employeeId", "")
-		
-
-		appointments, err := app.GetAppointmentsForClientInInstitution(user.ID, instId, employeeId)
-
-		if err != nil {
-			app.errorJson(w, err, http.StatusInternalServerError)
-			return
-		}
-
-		if appointments == 0 {
-			queueCount, err := app.GetQueueForClientInInstitution(user.ID, instId, employeeId)
-			if err != nil {
-				app.errorJson(w, err, http.StatusInternalServerError)
-				return
-			}
-
-			if queueCount == 0 {
-				app.errorJson(w, ErrNoProvidedServiceInThatInstitution, http.StatusBadRequest)
-				return
-			}
-		}
-
-		next.ServeHTTP(w, r)
-	})
-}
+//
+//func (app *Config) requireAtLeastOneAppointmentOrQueue(next http.Handler) http.Handler {
+//	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+//		user, err := app.contextGetUser(r)
+//		if err != nil {
+//			app.errorJson(w, err, http.StatusUnauthorized)
+//			return
+//		}
+//
+//		instId := app.readString(r.URL.Query(), "instId", "")
+//		if instId == "" {
+//			app.errorJson(w, ErrNoInstId, http.StatusBadRequest)
+//			return
+//		}
+//
+//		employeeId := app.readString(r.URL.Query(), "employeeId", "")
+//
+//		appointments, err := app.GetAppointmentsForClientInInstitution(user.ID, instId, employeeId)
+//
+//		if err != nil {
+//			app.errorJson(w, err, http.StatusInternalServerError)
+//			return
+//		}
+//
+//		//if appointments == 0 {
+//		//	queueCount, err := app.GetQueueForClientInInstitution(user.ID, instId, employeeId)
+//		//	if err != nil {
+//		//		app.errorJson(w, err, http.StatusInternalServerError)
+//		//		return
+//		//	}
+//		//
+//		//	if queueCount == 0 {
+//		//		app.errorJson(w, ErrNoProvidedServiceInThatInstitution, http.StatusBadRequest)
+//		//		return
+//		//	}
+//		//}
+//
+//		if appointments == 0 {
+//			app.errorJson(w, ErrNoProvidedServiceInThatInstitution, http.StatusBadRequest)
+//			return
+//		}
+//
+//		next.ServeHTTP(w, r)
+//	})
+//}

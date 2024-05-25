@@ -23,6 +23,12 @@ func (app *Config) CallNextClient(w http.ResponseWriter, r *http.Request) {
 		app.errorJson(w, err, http.StatusForbidden)
 		return
 	}
+	user, err := app.contextGetUser(r)
+	if err != nil {
+		app.errorJson(w, err, http.StatusInternalServerError)
+		return
+	}
+	
 	queue, err := app.Models.Queue.GetLastPositionedQueue(service.ID)
 	if err != nil {
 		app.errorJson(w, err)
@@ -32,27 +38,40 @@ func (app *Config) CallNextClient(w http.ResponseWriter, r *http.Request) {
 	if queue.QueueStatus == "completed" {
 		app.errorJson(w, data.ErrNoClientInQueue, http.StatusNotFound)
 	}
+	employeeId, err := app.GetEmployeeForServiceAndUserID(service.ID, user.ID)
+	if err != nil {
+		if errors.Is(err, data.ErrRecordNotFound) {
+			app.errorJson(w, data.ErrInvalidToken, http.StatusForbidden)
+			return
+		}
+		app.errorJson(w, err, http.StatusInternalServerError)
+		return
+	}
+	queue.EmployeeID = &employeeId
 	err = app.Models.Queue.CallFromQueue(queue)
 	if err != nil {
 		app.errorJson(w, err)
 		return
 	}
 
-	val, err := app.GetQueueLength(service.ID)
+	
 
+	users, err := app.Models.Queue.GetUsersFromQueue(service.ID)
 	if err != nil {
-		app.errorJson(w, err)
+		app.errorJson(w, err, http.StatusInternalServerError)
 		return
 	}
+
 
 	app.hub.Broadcast <- &Message{
 		RoomID:  app.GetServiceRoom(input.ServiceID),
 		Service: service,
 		Status:  "called",
 		Content: map[string]any{
-			"peopleLeft": val,
+			"peopleLeft": len(users),
 		},
 		UserID: queue.ClientID,
+		Users: users,
 	}
 
 	err = app.Redis.Set(r.Context(), app.GetUserRoom(queue.ClientID), input.MessageForClient, 10*60*time.Second).Err()
@@ -65,15 +84,16 @@ func (app *Config) CallNextClient(w http.ResponseWriter, r *http.Request) {
 		Service: service,
 		Status:  "messageForClient",
 		Content: map[string]any{
-			"peopleLeft": val,
+			"peopleLeft": len(users),
 			"queue":      queue,
 		},
 		UserID:           queue.ClientID,
 		MessageForClient: input.MessageForClient,
+		Users:            users,
 	}
 
 	queue.QueueStatus = "called"
-	app.writeJSON(w, http.StatusOK, map[string]any{"message": "Client called", "clientId": queue.ClientID, "queuePosition": queue.Position, "peopleInQueue": val, "queueId": queue.ID})
+	app.writeJSON(w, http.StatusOK, map[string]any{"message": "Client called", "clientId": queue.ClientID, "queuePosition": queue.Position, "peopleInQueue": len(users), "queueId": queue.ID})
 }
 
 func (app *Config) GetAllForInstitution(w http.ResponseWriter, r *http.Request) {
@@ -189,20 +209,21 @@ func (app *Config) UpdateQueueStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	val, err := app.GetQueueLength(queue.ServiceID)
+	users, err := app.Models.Queue.GetUsersFromQueue(queue.ServiceID)
 	if err != nil {
 		app.errorJson(w, err)
 		return
 	}
 	queueRes := &QueueRes{
 		Queue:      queue,
-		PeopleLeft: val,
+		PeopleLeft: len(users),
 	}
 	app.hub.Broadcast <- &Message{
 		RoomID:  app.GetServiceRoom(queue.ServiceID),
 		Status:  queue.QueueStatus,
 		Content: queueRes,
 		UserID:  queue.ClientID,
+		Users:   users,
 	}
 
 	if queue.QueueStatus == "completed" {
@@ -223,7 +244,6 @@ func (app *Config) UpdateQueueStatus(w http.ResponseWriter, r *http.Request) {
 
 	app.writeJSON(w, http.StatusOK, queue)
 }
-
 
 func (app *Config) GetQueueNumberForClientInInstitution(w http.ResponseWriter, r *http.Request) {
 	clientId, err := app.readIntParam(r, "clientId")
@@ -247,4 +267,21 @@ func (app *Config) GetQueueNumberForClientInInstitution(w http.ResponseWriter, r
 		return
 	}
 	app.writeJSON(w, http.StatusOK, map[string]int{"count": count})
+}
+
+func (app *Config) GetQueuesForClient(w http.ResponseWriter, r *http.Request) {
+	client, err := app.contextGetUser(r)
+	if err != nil {
+		app.errorJson(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	queues, _, err := app.Models.Queue.GetForClient(client.ID)
+
+	if err != nil {
+		app.errorJson(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	app.writeJSON(w, http.StatusOK, map[string]any{"queues": queues})
 }
