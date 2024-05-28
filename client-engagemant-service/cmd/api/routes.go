@@ -70,6 +70,18 @@ func (app *Config) routes() http.Handler {
 		r.Get("/client-employee/{client_id}/{employee_id}", app.GetAverageRatingForClientEmployee)
 	})
 
+	base.Route("/analytics", func(r chi.Router) {
+		r.Use(app.requireAuthentication)
+		r.Use(app.requireActivatedUser)
+		r.Get("/total-appointments-of-institution-for-given-date-range", app.TotalAppointmentsOfInstitutionForGivenDateRange)
+		r.Get("/wage-of-employee-service-for-given-date-range", app.WageOfEmployeeServiceForGivenDateRange)
+		r.Get("/total-revenue-of-institution-for-given-date-range", app.TotalRevenueOfInstitutionForGivenDateRange)
+		r.Get("/total-appointments-per-employee-for-given-date-range", app.TotalAppointmentsPerEmployeeForGivenDateRange)
+		r.Get("/most-popular-services-by-appointments", app.MostPopularServicesByAppointments)
+		r.Get("/most-popular-appointments-by-selected-date", app.MostPopularAppointmentsBySelectedDate)
+		r.Get("/most-popular-appointments-by-selected-date", app.MostPopularAppointmentsBySelectedDate)
+		r.Get("/most-popular-appointments-by-selected-date", app.MostPopularAppointmentsBySelectedDate)
+	})
 	mux.NotFound(app.NotFound)
 	return mux
 }

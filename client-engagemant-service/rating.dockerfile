@@ -1,7 +1,8 @@
 FROM alpine:latest
+RUN apk --no-cache add curl
 
 RUN mkdir /app
 
-COPY appointmentApp /app
+COPY ratingApp /app
 
-CMD [ "/app/appointmentApp"]
+CMD [ "/app/ratingApp"]

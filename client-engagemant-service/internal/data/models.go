@@ -3,6 +3,7 @@ package data
 import (
 	"database/sql"
 	"errors"
+	"time"
 )
 
 var (
@@ -15,6 +16,7 @@ var (
 	ErrInvalidInstitutionId = errors.New("invalid institution id")
 	ErrInvalidServiceId     = errors.New("invalid service id")
 	ErrRatingAlreadyExists  = errors.New("rating already exists for this appointment")
+	ErrInvalidDate          = errors.New("invalid date")
 )
 
 var db *sql.DB
@@ -23,8 +25,9 @@ func New(dbPool *sql.DB) Models {
 	db = dbPool
 
 	return Models{
-		Rating:  &RatingModel{DB: db},
-		Comment: &CommentModel{DB: db},
+		Rating:    &RatingModel{DB: db},
+		Comment:   &CommentModel{DB: db},
+		Analytics: &AnalyticsModel{DB: db},
 	}
 }
 
@@ -60,5 +63,15 @@ type Models struct {
 		Delete(id int64) error
 		DeleteByInstitutionId(instId int64) error
 		DeleteByUserId(userId int64) error
+	}
+	Analytics interface {
+		TotalAppointmentsOfInstitutionForGivenDateRange(institutionID int64, startDate time.Time, endDate time.Time) (int, error)
+		WageOfEmployeeServiceForGivenDateRange(employeeID int64, startDate time.Time, endDate time.Time) ([]*Wage, error)
+		TotalRevenueOfInstitutionForGivenDateRange(institutionID int64, startDate time.Time, endDate time.Time) (Wage, error)
+		TotalAppointmentsPerEmployeeForGivenDateRange(employeeID, institutionID int64, startDate, endDate time.Time) ([]*Analytics, error)
+		MostPopularServicesByAppointments(serviceId, institutionId int64) ([]*Analytics, error)
+		MostPopularAppointmentsBySelectedDate(institutionID int64, date string) ([]*Analytics, error)
+		GetCanceledAndTotalAppointmentsForGivenDateRange(institutionID int64, startDate time.Time, endDate time.Time) ([]*Analytics, error)
+		EmployeeWithHighestRating(institutionID int64) ([]*Analytics, error)
 	}
 }

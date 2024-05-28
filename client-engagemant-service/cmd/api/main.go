@@ -51,7 +51,7 @@ func main() {
 	}
 	authHost := os.Getenv("AUTH_HOST")
 	if authHost == "" {
-		authHost = "localhost"
+		authHost = "Reserve-hub-lb-1596239107.us-east-1.elb.amazonaws.com"
 	}
 	app := Config{
 		port:                "8088",
